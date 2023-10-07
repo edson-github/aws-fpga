@@ -38,26 +38,36 @@ def pytest_addoption(parser):
 def pytest_generate_tests(metafunc):
 
     if metafunc.cls.ADD_BATCH:
-        print("Configuring parameters of {}::{}".format(metafunc.module.__name__, metafunc.function.__name__))
+        print(
+            f"Configuring parameters of {metafunc.module.__name__}::{metafunc.function.__name__}"
+        )
         print("Batch = " + metafunc.config.getoption('batch'))
         metafunc.parametrize("batch", [metafunc.config.getoption('batch')])
 
     if metafunc.cls.ADD_SIMULATOR:
-        print("Configuring parameters of {}::{}".format(metafunc.module.__name__, metafunc.function.__name__))
+        print(
+            f"Configuring parameters of {metafunc.module.__name__}::{metafunc.function.__name__}"
+        )
         print("Simulator = " + metafunc.config.getoption('simulator'))
         metafunc.parametrize("simulator", [metafunc.config.getoption('simulator')])
 
     if metafunc.cls.ADD_EXAMPLEPATH:
-        print("Configuring parameters of {}::{}".format(metafunc.module.__name__, metafunc.function.__name__))
+        print(
+            f"Configuring parameters of {metafunc.module.__name__}::{metafunc.function.__name__}"
+        )
         print("examplePath = " + metafunc.config.getoption('examplePath'))
         metafunc.parametrize("examplePath", [metafunc.config.getoption('examplePath')])
 
     if metafunc.cls.ADD_RTENAME:
-        print("Configuring parameters of {}::{}".format(metafunc.module.__name__, metafunc.function.__name__))
+        print(
+            f"Configuring parameters of {metafunc.module.__name__}::{metafunc.function.__name__}"
+        )
         print("rteName = " + metafunc.config.getoption('rteName'))
         metafunc.parametrize("rteName", [metafunc.config.getoption('rteName')])
 
     if metafunc.cls.ADD_XILINX_VERSION:
-        print("Configuring parameters of {}::{}".format(metafunc.module.__name__, metafunc.function.__name__))
+        print(
+            f"Configuring parameters of {metafunc.module.__name__}::{metafunc.function.__name__}"
+        )
         print("xilinxVersion = " + metafunc.config.getoption('xilinxVersion'))
         metafunc.parametrize("xilinxVersion", [metafunc.config.getoption('xilinxVersion')])

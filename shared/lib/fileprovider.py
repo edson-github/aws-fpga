@@ -51,19 +51,17 @@ class FileProvider(object):
     def set_exclude_files(self, files):
         self.exclude_files = files
         self.exclude_file_regexps = []
-        for file in files:
-            self.exclude_file_regexps.append(re.compile(file))
+        self.exclude_file_regexps.extend(re.compile(file) for file in files)
 
     def set_exclude_paths(self, paths):
         self.exclude_paths = paths
         self.exclude_path_regexps = []
-        for path in paths:
-            self.exclude_path_regexps.append(re.compile(path))
+        self.exclude_path_regexps.extend(re.compile(path) for path in paths)
 
     def get_files(self, directory_to_search):
         directory_to_search = os.path.join(self.repo_dir, directory_to_search)
         if not os.path.exists(directory_to_search):
-            logger.error("Directory doesn't exist: {}".format(directory_to_search))
+            logger.error(f"Directory doesn't exist: {directory_to_search}")
             return None
 
         file_list = []
@@ -71,24 +69,21 @@ class FileProvider(object):
         for root, dirs, files in os.walk(directory_to_search, topdown=True):
             relative_root = relpath(root, self.repo_dir)
 
-            # Skip excluded paths
-            excluded = False
-            for exclude_path_re in self.exclude_path_regexps:
-                if exclude_path_re.match(relative_root):
-                    excluded = True
-                    break;
+            excluded = any(
+                exclude_path_re.match(relative_root)
+                for exclude_path_re in self.exclude_path_regexps
+            )
             if excluded:
-                logger.debug("Excluded {}".format(relative_root))
+                logger.debug(f"Excluded {relative_root}")
                 continue
             for dir in dirs:
                 relative_dir = relpath(os.path.join(root, dir), self.repo_dir)
-                excluded = False
-                for exclude_path_re in self.exclude_path_regexps:
-                    if exclude_path_re.match(relative_dir):
-                        excluded = True
-                        break;
+                excluded = any(
+                    exclude_path_re.match(relative_dir)
+                    for exclude_path_re in self.exclude_path_regexps
+                )
                 if excluded:
-                    logger.debug("Excluded {}".format(relative_dir))
+                    logger.debug(f"Excluded {relative_dir}")
                     dirs.remove(dir)
                     continue
 
@@ -98,15 +93,14 @@ class FileProvider(object):
                 # Ignore files not in the repo
                 rval = self.git.ls_files(relative_filename)
                 if not rval:
-                    logger.debug("Excluded {}".format(relative_filename))
+                    logger.debug(f"Excluded {relative_filename}")
                     continue
-                excluded = False
-                for exclude_file_re in self.exclude_file_regexps:
-                    if exclude_file_re.match(relative_filename):
-                        excluded = True
-                        break
+                excluded = any(
+                    exclude_file_re.match(relative_filename)
+                    for exclude_file_re in self.exclude_file_regexps
+                )
                 if excluded:
-                    logger.debug("Excluded {}".format(relative_filename))
+                    logger.debug(f"Excluded {relative_filename}")
                     continue
                 file_list.append(relative_filename)
 

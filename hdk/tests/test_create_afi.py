@@ -23,6 +23,7 @@ Call using ```pytest test_create_afi.py```
 See TESTING.md for details.
 '''
 
+
 from __future__ import print_function
 import boto3
 import os
@@ -37,7 +38,7 @@ try:
     import aws_fpga_utils
 except ImportError as e:
     traceback.print_tb(sys.exc_info()[2])
-    print("error: {}\nMake sure to source hdk_setup.sh".format(sys.exc_info()[1]))
+    print(f"error: {sys.exc_info()[1]}\nMake sure to source hdk_setup.sh")
     sys.exit(1)
 
 logger = aws_fpga_utils.get_logger(__name__)
@@ -62,16 +63,16 @@ class TestCreateAfi(AwsFpgaTestBase):
         return
 
     def get_dcp_tarball(self, cl):
-        dcp_dir = "{}/hdk/cl/examples/{}/build/checkpoints/to_aws".format(self.WORKSPACE, cl)
+        dcp_dir = f"{self.WORKSPACE}/hdk/cl/examples/{cl}/build/checkpoints/to_aws"
         dcp_tarball = None
         if os.path.exists(dcp_dir):
             for file in os.listdir(dcp_dir):
                 if re.match(r'.+\.Developer_CL\.tar', file):
-                    dcp_tarball = dcp_dir + '/' + file
-                    logger.info("DCP tarball={}".format(dcp_tarball))
+                    dcp_tarball = f'{dcp_dir}/{file}'
+                    logger.info(f"DCP tarball={dcp_tarball}")
                     break
         if not dcp_tarball:
-            raise ValueError("No DCP tarball in {}".format(dcp_dir))
+            raise ValueError(f"No DCP tarball in {dcp_dir}")
         return dcp_tarball
 
     def base_test(self, cl, xilinxVersion, build_strategy='DEFAULT', clock_recipe_a='A0', clock_recipe_b='B0', clock_recipe_c='C0', uram_option='2'):
@@ -84,15 +85,19 @@ class TestCreateAfi(AwsFpgaTestBase):
         # On Jenkins unstash will have already restored the DCP.
         # If not, download from S3 so can debug this test standalone.
 
-        option_tag = "{}_{}_{}_{}_{}".format(clock_recipe_a, clock_recipe_b, clock_recipe_c, uram_option, build_strategy)
+        option_tag = f"{clock_recipe_a}_{clock_recipe_b}_{clock_recipe_c}_{uram_option}_{build_strategy}"
 
         # Get the DCP tarball
         try:
             dcp_tarball = self.get_dcp_tarball(cl)
         except ValueError:
             # DCP should have already been uploaded to S3 by test_gen_dcp.py
-            logger.info("Downloading dcp from s3://{}/{}".format(self.s3_bucket, self.get_cl_s3_dcp_tag(cl, option_tag, xilinxVersion)))
-            os.system("aws s3 cp s3://{}/{} {} --recursive".format(self.s3_bucket, self.get_cl_s3_dcp_tag(cl, option_tag, xilinxVersion), self.get_cl_to_aws_dir(cl)))
+            logger.info(
+                f"Downloading dcp from s3://{self.s3_bucket}/{self.get_cl_s3_dcp_tag(cl, option_tag, xilinxVersion)}"
+            )
+            os.system(
+                f"aws s3 cp s3://{self.s3_bucket}/{self.get_cl_s3_dcp_tag(cl, option_tag, xilinxVersion)} {self.get_cl_to_aws_dir(cl)} --recursive"
+            )
             dcp_tarball = self.get_dcp_tarball(cl)
 
         # Create the AFI
@@ -100,8 +105,8 @@ class TestCreateAfi(AwsFpgaTestBase):
         create_afi_response = self.ec2_client().create_fpga_image(InputStorageLocation={'Bucket': self.s3_bucket, 'Key': dcp_key})
         afi = create_afi_response['FpgaImageId']
         agfi = create_afi_response['FpgaImageGlobalId']
-        logger.info("afi={}".format(afi))
-        logger.info("agfi={}".format(agfi))
+        logger.info(f"afi={afi}")
+        logger.info(f"agfi={agfi}")
 
         # Write IDs to S3 for use by downstream tests
         id_filename = self.get_cl_afi_id_filename(cl)
@@ -109,13 +114,14 @@ class TestCreateAfi(AwsFpgaTestBase):
         id_filename_key = self.get_cl_s3_afi_tag(cl, option_tag, xilinxVersion)
         if not os.path.exists(id_filename_dir):
             os.makedirs(id_filename_dir)
-        fh = open(id_filename, 'w')
-        fh.write("{}\n{}\n".format(afi, agfi))
-        fh.close()
+        with open(id_filename, 'w') as fh:
+            fh.write(f"{afi}\n{agfi}\n")
         self.s3_client().upload_file(id_filename, self.s3_bucket, id_filename_key)
 
         # Wait for the AFI to complete
-        rc = os.system(self.WORKSPACE + "/shared/bin/scripts/wait_for_afi.py --afi {}".format(afi))
+        rc = os.system(
+            f"{self.WORKSPACE}/shared/bin/scripts/wait_for_afi.py --afi {afi}"
+        )
         assert rc == 0
 
     @pytest.mark.parametrize("build_strategy", AwsFpgaTestBase.DCP_BUILD_STRATEGIES)

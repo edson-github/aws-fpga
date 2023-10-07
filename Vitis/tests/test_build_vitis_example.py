@@ -22,6 +22,7 @@ Call using ```pytest test_build_vitis_example.py```
 See TESTING.md for details.
 '''
 
+
 from __future__ import print_function
 import os
 from os.path import dirname, realpath, basename
@@ -32,7 +33,9 @@ try:
     from aws_fpga_test_utils.AwsFpgaTestBase import AwsFpgaTestBase
 except ImportError as e:
     traceback.print_tb(sys.exc_info()[2])
-    print("error: {}\nMake sure to source shared/bin/setup_test_env.sh".format(sys.exc_info()[1]))
+    print(
+        f"error: {sys.exc_info()[1]}\nMake sure to source shared/bin/setup_test_env.sh"
+    )
     sys.exit(1)
 
 logger = aws_fpga_utils.get_logger(__name__)
@@ -77,43 +80,46 @@ class TestBuildVitisExample(AwsFpgaTestBase):
 
         xclbin_path = self.get_vitis_xclbin_dir(examplePath, target)
 
-        logger.info("Checking if Vitis Example xclbin path={} exists".format(xclbin_path))
-        assert os.path.exists(xclbin_path), "Vitis Example xclbinpath={} does not exist".format(xclbin_path)
+        logger.info(f"Checking if Vitis Example xclbin path={xclbin_path} exists")
+        assert os.path.exists(
+            xclbin_path
+        ), f"Vitis Example xclbinpath={xclbin_path} does not exist"
 
-        logger.info("Checking that a non zero size xclbin file exists in {}".format(xclbin_path))
+        logger.info(
+            f"Checking that a non zero size xclbin file exists in {xclbin_path}"
+        )
         xclbin = self.assert_non_zero_file(os.path.join(xclbin_path, "*.xclbin"))
-        logger.info("xclbin: {}".format(xclbin))
+        logger.info(f"xclbin: {xclbin}")
 
         return xclbin
 
     def base_test(self, examplePath, target, rteName, xilinxVersion, clean=True, check=True):
 
         full_example_path = self.get_vitis_example_fullpath(examplePath=examplePath)
-        logger.info("Vitis Example path={}".format(full_example_path))
+        logger.info(f"Vitis Example path={full_example_path}")
 
-        assert os.path.exists(full_example_path), "Vitis Example path={} does not exist".format(full_example_path)
+        assert os.path.exists(
+            full_example_path
+        ), f"Vitis Example path={full_example_path} does not exist"
 
         os.chdir(full_example_path)
 
         if clean:
             (rc, stdout_lines, stderr_lines) = self.run_cmd("make clean")
-            assert rc == 0, "Vitis build failed while cleaning with rc={}".format(rc)
+            assert rc == 0, f"Vitis build failed while cleaning with rc={rc}"
 
         check_string = ""
         if check:
-            check_string = "check"
-            if xilinxVersion >= 2019.2:
-                check_string = "run"
-
+            check_string = "run" if xilinxVersion >= 2019.2 else "check"
         (rc, stdout_lines, stderr_lines) = self.run_cmd("make {0} TARGET={1} DEVICE={2} all PROFILE=yes".format(check_string, target, os.environ['AWS_PLATFORM']))
-        assert rc == 0, "Vitis build failed with rc={}".format(rc)
+        assert rc == 0, f"Vitis build failed with rc={rc}"
 
         # Check for non zero xclbin
         xclbin = self.check_build(examplePath=examplePath, target=target)
 
         xclbin_key = os.path.join(self.get_vitis_example_s3_xclbin_tag(examplePath=examplePath, target=target, rteName=rteName, xilinxVersion=xilinxVersion), basename(xclbin))
 
-        logger.info("Uploading xclbin to {}".format(os.path.join(self.s3_bucket, xclbin_key)))
+        logger.info(f"Uploading xclbin to {os.path.join(self.s3_bucket, xclbin_key)}")
         self.s3_client().upload_file(xclbin, self.s3_bucket, xclbin_key)
 
         return

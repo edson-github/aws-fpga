@@ -30,7 +30,7 @@ try:
     import aws_fpga_utils
 except ImportError as e:
     traceback.print_tb(sys.exc_info()[2])
-    print("error: {}\nMake sure to source hdk_setup.sh".format(sys.exc_info()[1]))
+    print(f"error: {sys.exc_info()[1]}\nMake sure to source hdk_setup.sh")
     sys.exit(1)
 
 logger = aws_fpga_utils.get_logger(__file__)
@@ -48,7 +48,13 @@ If --notify is used then --email is required.
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--afi', action='store', required=True, help="AFI ID (not Global AFI ID)")
-    parser.add_argument('--max-minutes', action='store', required=False, default=(DEFAULT_MAX_DURATION_HOURS * 60), help="Maximum minutes to wait. Default={}".format(DEFAULT_MAX_DURATION_HOURS * 60))
+    parser.add_argument(
+        '--max-minutes',
+        action='store',
+        required=False,
+        default=(DEFAULT_MAX_DURATION_HOURS * 60),
+        help=f"Maximum minutes to wait. Default={DEFAULT_MAX_DURATION_HOURS * 60}",
+    )
     parser.add_argument('--notify', action='store_true', default=False, required=False, help="Notify SNS topic when AFI generation completes.")
     parser.add_argument('--sns-topic', action='store', required=False, default='CREATE_AFI', help="SNS topic name to create/use for notification. Defaults to CREATE_AFI)")
     parser.add_argument('--email', action='store', required=False, default=None, help="Email address to subscribe to the SNS topic.")
@@ -62,7 +68,7 @@ if __name__ == '__main__':
 
     max_duration = timedelta(minutes=args.max_minutes)
 
-    logger.info("Waiting for {} generation to complete.".format(args.afi))
+    logger.info(f"Waiting for {args.afi} generation to complete.")
 
     if args.notify:
         if not args.email:
@@ -70,7 +76,9 @@ if __name__ == '__main__':
             sys.exit(1)
         email = args.email
         topic_name = args.sns_topic
-        logger.info("Will subscribe {} to SNS topic {} and notify the topic when complete".format(email, topic_name))
+        logger.info(
+            f"Will subscribe {email} to SNS topic {topic_name} and notify the topic when complete"
+        )
 
         topic_arn = aws_fpga_utils.create_sns_subscription(topic_name, email)
 
@@ -80,13 +88,13 @@ if __name__ == '__main__':
     while not create_fpga_image_complete:
         afi_info = ec2_client.describe_fpga_images(FpgaImageIds=[args.afi])['FpgaImages'][0]
         afi_state = afi_info['State']['Code']
-        logger.debug("State={}".format(afi_state))
+        logger.debug(f"State={afi_state}")
         if afi_state != 'pending':
             if afi_state == 'available':
                 logger.info('AFI generation passed and AFI is available')
             else:
                 afi_message = afi_info['State']['Message']
-                logger.error("AFI generation failed. State={} Message={}".format(afi_state, afi_message))
+                logger.error(f"AFI generation failed. State={afi_state} Message={afi_message}")
             create_fpga_image_complete = True
         else:
             current_time = datetime.utcnow()
@@ -98,11 +106,11 @@ if __name__ == '__main__':
 
     if args.notify:
         if passed:
-            subject = "create-fpga-image of {} passed".format(args.afi)
-            message = "State={}".format(afi_state)
+            subject = f"create-fpga-image of {args.afi} passed"
+            message = f"State={afi_state}"
         else:
-            subject = "create-fpga-image of {} failed".format(args.afi)
-            message = "State={} Messsage={}".format(afi_state, afi_message)
+            subject = f"create-fpga-image of {args.afi} failed"
+            message = f"State={afi_state} Messsage={afi_message}"
         sns_client = boto3.client('sns')
         pub_resp = sns_client.publish(TopicArn=topic_arn,
                                       Subject=subject,

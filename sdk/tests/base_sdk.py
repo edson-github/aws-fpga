@@ -32,13 +32,13 @@ try:
     import aws_fpga_utils
 except ImportError as e:
     traceback.print_tb(sys.exc_info()[2])
-    print("error: {}\nMake sure to source sdk_setup.sh".format(sys.exc_info()[1]))
+    print(f"error: {sys.exc_info()[1]}\nMake sure to source sdk_setup.sh")
     sys.exit(1)
 
 logger = aws_fpga_utils.get_logger(__name__)
 
 def c_tests_log_f(level, message):
-    print("log from c: " + str(message.strip()))
+    print(f"log from c: {str(message.strip())}")
     return 0
 
 class BaseSdkTools(AwsFpgaTestBase):
@@ -59,7 +59,9 @@ class BaseSdkTools(AwsFpgaTestBase):
 
         AwsFpgaTestBase.assert_sdk_setup()
 
-        assert AwsFpgaTestBase.running_on_f1_instance(), 'This test must be run on an F1 instance. Instance type={}'.format(aws_fpga_test_utils.get_instance_type())
+        assert (
+            AwsFpgaTestBase.running_on_f1_instance()
+        ), f'This test must be run on an F1 instance. Instance type={aws_fpga_test_utils.get_instance_type()}'
 
         cls.load_mgmt_so()
         cls.load_mgmt_test_so()
@@ -79,7 +81,9 @@ class BaseSdkTools(AwsFpgaTestBase):
         # Rescanning PCI for each slot
         logger.info("Rescanning each slot to see if PCI devices change")
         for slot in range(cls.num_slots):
-            (rc, stdout, stderr) = cls.run_cmd("sudo fpga-describe-local-image -R -S {}".format(slot))
+            (rc, stdout, stderr) = cls.run_cmd(
+                f"sudo fpga-describe-local-image -R -S {slot}"
+            )
         logger.info("PCI devices:\n{}".format("\n".join(cls.list_pci_devices())))
 
         cls.set_slot_to_device_mapping()
@@ -87,7 +91,9 @@ class BaseSdkTools(AwsFpgaTestBase):
 
     @classmethod
     def load_mgmt_so(cls):
-        mgmt_so_loc = "{}/sdk/userspace/lib/so/libfpga_mgmt.so".format(AwsFpgaTestBase.WORKSPACE)
+        mgmt_so_loc = (
+            f"{AwsFpgaTestBase.WORKSPACE}/sdk/userspace/lib/so/libfpga_mgmt.so"
+        )
         ctypes.cdll.LoadLibrary(mgmt_so_loc)
         # Setup shared object return and argument types
         cls.mgmt_so = ctypes.CDLL(mgmt_so_loc)
@@ -100,7 +106,7 @@ class BaseSdkTools(AwsFpgaTestBase):
 
         cls.mgmt_so.fpga_pci_poke.restype = ctypes.c_int
         cls.mgmt_so.fpga_pci_poke.argtypes = [ctypes.c_int,ctypes.c_uint64,ctypes.c_uint32]
-        
+
         cls.mgmt_so.fpga_pci_peek8.restype = ctypes.c_int
         cls.mgmt_so.fpga_pci_peek8.argtypes = [ctypes.c_int,ctypes.c_uint64,ctypes.POINTER(ctypes.c_uint8)]
 
@@ -111,12 +117,16 @@ class BaseSdkTools(AwsFpgaTestBase):
     @classmethod
     def load_mgmt_test_so(cls):
         env = dict(os.environ)
-        env['SDK_DIR'] = AwsFpgaTestBase.WORKSPACE + "/sdk"
-        make_proc = subprocess.Popen("make", cwd=AwsFpgaTestBase.WORKSPACE + "/sdk/tests/c_tests", env=env)
+        env['SDK_DIR'] = f"{AwsFpgaTestBase.WORKSPACE}/sdk"
+        make_proc = subprocess.Popen(
+            "make", cwd=f"{AwsFpgaTestBase.WORKSPACE}/sdk/tests/c_tests", env=env
+        )
         if make_proc.wait() != 0:
             raise Exception("Unable to build fpga_mgmt_tests c library")
 
-        mgmt_test_so_loc = "{}/sdk/tests/c_tests/fpga_mgmt_lib_tests.so".format(AwsFpgaTestBase.WORKSPACE)
+        mgmt_test_so_loc = (
+            f"{AwsFpgaTestBase.WORKSPACE}/sdk/tests/c_tests/fpga_mgmt_lib_tests.so"
+        )
         ctypes.cdll.LoadLibrary(mgmt_test_so_loc)
         # Setup shared object return and argument types
         cls.mgmt_test_so = ctypes.CDLL(mgmt_test_so_loc)
@@ -153,27 +163,34 @@ class BaseSdkTools(AwsFpgaTestBase):
         mbox_device2slot = {}
         for slot in range(cls.num_slots):
             matches = slot_re.match(stdout[slot * 2])
-            assert matches, "Invalid format: {}".format(stdout[slot * 2])
-            assert matches.group(1) == str(slot), "slot!={}: {}".format(slot, stdout[slot * 2])
+            assert matches, f"Invalid format: {stdout[slot * 2]}"
+            assert matches.group(1) == str(slot), f"slot!={slot}: {stdout[slot * 2]}"
             dbdf = matches.group(2)
-            assert dbdf not in device2slot, "device {} already used by slot {}".format(dbdf, device2slot[dbdf])
-            assert dbdf not in mbox_device2slot, "device {} already used by slot {} mbox".format(dbdf, device2slot[dbdf])
+            assert (
+                dbdf not in device2slot
+            ), f"device {dbdf} already used by slot {device2slot[dbdf]}"
+            assert (
+                dbdf not in mbox_device2slot
+            ), f"device {dbdf} already used by slot {device2slot[dbdf]} mbox"
             device2slot[dbdf] = slot
             cls.slot2device[slot] = dbdf
-            logger.info("Slot {} uses PCI device {}".format(slot, dbdf))
+            logger.info(f"Slot {slot} uses PCI device {dbdf}")
 
             matches = slot_re.match(stdout[slot * 2 + 1])
-            assert matches, "Invalid format: {}".format(stdout[slot * 2 + 1])
-            assert matches.group(1) == str(slot), "slot!={}: {}".format(slot, stdout[slot * 2 + 1])
+            assert matches, f"Invalid format: {stdout[slot * 2 + 1]}"
+            assert matches.group(1) == str(slot), f"slot!={slot}: {stdout[slot * 2 + 1]}"
             dbdf = matches.group(2)
-            assert dbdf not in device2slot, "device {} already used by slot {}".format(dbdf, device2slot[dbdf])
-            assert dbdf not in mbox_device2slot, "device {} already used by slot {} mbox".format(dbdf, device2slot[dbdf])
+            assert (
+                dbdf not in device2slot
+            ), f"device {dbdf} already used by slot {device2slot[dbdf]}"
+            assert (
+                dbdf not in mbox_device2slot
+            ), f"device {dbdf} already used by slot {device2slot[dbdf]} mbox"
             mbox_device2slot[dbdf] = slot
             cls.slot2mbox_device[slot] = dbdf
-            logger.info("Slot {} mbox uses PCI device {}".format(slot, dbdf))
+            logger.info(f"Slot {slot} mbox uses PCI device {dbdf}")
 
     @staticmethod
     def list_pci_devices():
         (rc, stdout, stderr) = AwsFpgaTestBase.run_cmd("ls -1 /sys/bus/pci/devices")
-        pci_devices = stdout[0:-1]
-        return pci_devices
+        return stdout[:-1]

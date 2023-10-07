@@ -36,7 +36,7 @@ try:
     import aws_fpga_utils
 except ImportError as e:
     traceback.print_tb(sys.exc_info()[2])
-    print("error: {}\nMake sure to source hdk_setup.sh".format(sys.exc_info()[1]))
+    print(f"error: {sys.exc_info()[1]}\nMake sure to source hdk_setup.sh")
     sys.exit(1)
 
 logger = aws_fpga_utils.get_logger(__file__)
@@ -46,8 +46,7 @@ def get_git_repo_root(path=None):
     if not path:
         path = os.getcwd()
     repo = git.Repo(path, search_parent_directories=True)
-    repo_dir = repo.git.rev_parse("--show-toplevel")
-    return repo_dir
+    return repo.git.rev_parse("--show-toplevel")
 
 
 def edma_driver_installed():
@@ -55,9 +54,7 @@ def edma_driver_installed():
         return True
     if os.path.exists('/etc/modules-load.d/edma.conf'):
         return True
-    if os.system('/usr/sbin/lsmod | grep edma_drv') == 0:
-        return True
-    return False
+    return os.system('/usr/sbin/lsmod | grep edma_drv') == 0
 
 
 def remove_edma_driver():
@@ -65,8 +62,8 @@ def remove_edma_driver():
     # This fails if the driver isn't installed
     edma_driver_ko_list = find_files_in_path('/lib/modules', 'edma-drv.ko')
     for edma_ko in edma_driver_ko_list:
-        logger.info("Removing {}".format(edma_ko))
-        assert os.system("sudo rm -f {}".format(edma_ko)) == 0
+        logger.info(f"Removing {edma_ko}")
+        assert os.system(f"sudo rm -f {edma_ko}") == 0
 
     assert os.system('sudo rm -f /etc/modules-load.d/edma.conf') == 0
     os.system('sudo rmmod edma-drv')
@@ -78,12 +75,7 @@ def get_driver_mode_string(mode='poll'):
     if mode not in valid_modes:
         raise ValueError("Driver mode can only be one of %r" % valid_modes)
 
-    mode_string = ""
-
-    if mode == 'poll':
-        mode_string = 'poll_mode=1'
-
-    return mode_string
+    return 'poll_mode=1' if mode == 'poll' else ""
 
 
 # Function to install the edma driver
@@ -100,7 +92,7 @@ def install_edma_driver(mode='poll'):
         make && \
         sudo insmod edma-drv.ko {}".format(get_driver_mode_string(mode))
 
-    logger.info("Install command: {}".format(install_command))
+    logger.info(f"Install command: {install_command}")
 
     assert os.system(install_command) == 0
 
@@ -112,9 +104,7 @@ def xdma_driver_installed():
         return True
     if os.system('/usr/sbin/lsmod | grep xdma') == 0:
         return True
-    if os.path.exists('/etc/udev/rules.d/10-xdma.rules'):
-        return True
-    return False
+    return bool(os.path.exists('/etc/udev/rules.d/10-xdma.rules'))
 
 
 def remove_xdma_driver():
@@ -124,8 +114,8 @@ def remove_xdma_driver():
 
     xdma_driver_ko_list = find_files_in_path('/lib/modules', 'xdma.ko')
     for xdma_ko in xdma_driver_ko_list:
-        logger.info("Removing {}".format(xdma_ko))
-        assert os.system("sudo rm -f {}".format(xdma_ko)) == 0
+        logger.info(f"Removing {xdma_ko}")
+        assert os.system(f"sudo rm -f {xdma_ko}") == 0
 
     assert os.system('sudo rm -f /etc/modules-load.d/xdma.conf') == 0
     assert os.system('sudo rm -f /etc/udev/rules.d/10-xdma.rules') == 0
@@ -143,15 +133,13 @@ def install_xdma_driver(mode='poll'):
         make clean && \
         make && \
         sudo insmod xdma.ko {}".format(get_driver_mode_string(mode))
-    logger.info("Install command: {}".format(install_command))
+    logger.info(f"Install command: {install_command}")
 
     assert os.system(install_command) == 0
 
 
 def xocl_driver_installed():
-    if os.system('/usr/sbin/lsmod | grep xocl') == 0:
-        return True
-    return False
+    return os.system('/usr/sbin/lsmod | grep xocl') == 0
 
 
 def remove_xocl_driver():
@@ -162,8 +150,8 @@ def remove_xocl_driver():
     xocl_driver_ko_list = find_files_in_path('/lib/modules', 'xocl.ko')
     xocl_driver_ko_xz_list = find_files_in_path('/lib/modules', 'xocl.ko.xz')
     for xocl_ko in (xocl_driver_ko_list + xocl_driver_ko_xz_list):
-        logger.info("Removing xocl {}".format(xocl_ko))
-        assert os.system("sudo rm -rf {}".format(xocl_ko)) == 0
+        logger.info(f"Removing xocl {xocl_ko}")
+        assert os.system(f"sudo rm -rf {xocl_ko}") == 0
 
     assert os.system('sudo rm -f /etc/udev/rules.d/10-xocl.rules') == 0
 
@@ -219,9 +207,10 @@ class FpgaLocalImage:
         '''
         p = subprocess.Popen(['sudo', 'fpga-describe-local-image', '-S', str(slot), '-R', '-H'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         (stdout_lines, stderr_lines) = p.communicate()
-        rc = p.returncode
-        if rc:
-            raise RuntimeError("fpga-describe-local-image failed with rc={}\nstdout:\n{}\nstderr:{}".format(rc, stdout_lines, stderr_lines))
+        if rc := p.returncode:
+            raise RuntimeError(
+                f"fpga-describe-local-image failed with rc={rc}\nstdout:\n{stdout_lines}\nstderr:{stderr_lines}"
+            )
         stdout_lines = stdout_lines.split('\n')
         (self.type, self.slot, self.agfi, self.statusName, self.statusCode, self.errorName, self.errorCode, self.shVersion) = stdout_lines[1].split()
         (type2, slot2, self.vendorId, self.deviceId, self.dbdf) = stdout_lines[3].split()
@@ -235,13 +224,11 @@ def fpga_describe_local_image(slot):
 
 
 def get_instance_id():
-    instance_id = urlopen('http://169.254.169.254/latest/meta-data/instance-id').read()
-    return instance_id
+    return urlopen('http://169.254.169.254/latest/meta-data/instance-id').read()
 
 
 def get_instance_type():
-    instance_type = urlopen('http://169.254.169.254/latest/meta-data/instance-type').read()
-    return instance_type
+    return urlopen('http://169.254.169.254/latest/meta-data/instance-type').read()
 
 
 def get_num_fpga_slots(instance_type):
@@ -281,14 +268,16 @@ def read_clock_recipes():
             if not row or row[0] == '':
                 continue
             matches = re.match('Clock Group (\S)', row[0])
-            assert matches, "Invalid format in {}. Expected 'Clock Group \S'\n{}".format(clock_recipes_csv, row[0])
+            assert (
+                matches
+            ), f"Invalid format in {clock_recipes_csv}. Expected 'Clock Group \S'\n{row[0]}"
             clock_group = matches.group(1)
             logger.debug(row[0])
-            CLOCK_RECIPES[clock_group] = {}
-            CLOCK_RECIPES[clock_group]['clock_names'] = []
-            CLOCK_RECIPES[clock_group]['recipes'] = {}
+            CLOCK_RECIPES[clock_group] = {'clock_names': [], 'recipes': {}}
             row = next(csvreader)
-            assert row[0] == 'Recipe Number', "Invalid format in {}. Expected 'Recipe Number'\n{}".format(clock_recipes_csv, row[0])
+            assert (
+                row[0] == 'Recipe Number'
+            ), f"Invalid format in {clock_recipes_csv}. Expected 'Recipe Number'\n{row[0]}"
             for clock_name in row[1:]:
                 if clock_name == '':
                     break;
@@ -310,9 +299,8 @@ def find_files_in_path(root_folder='/lib/modules', filename='xdma.ko'):
     found_file_list=[]
 
     for root, dirs, files in os.walk(root_folder):
-        for file in files:
-            if file == filename:
-                 found_file_list.append(os.path.join(root, filename))
-
+        found_file_list.extend(
+            os.path.join(root, filename) for file in files if file == filename
+        )
     return found_file_list
 

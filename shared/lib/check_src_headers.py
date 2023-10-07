@@ -412,7 +412,7 @@ logger.info("max_header_lines={}".format(max_header_lines))
 
 def check_header_lines(prefix, act_lines, exp_lines):
     # Strip off leading spaces and prefix
-    prefix_re = re.compile(r' *' + re.escape(prefix) + r' *')
+    prefix_re = re.compile(f' *{re.escape(prefix)} *')
 
     if len(act_lines) < len(exp_lines):
         return False
@@ -444,12 +444,12 @@ def find_header(file_path):
         line = f.readline()
         if line == '':
             if len(lines) < min_header_lines:
-                logger.error("Less than {} lines in file".format(min_header_lines))
+                logger.error(f"Less than {min_header_lines} lines in file")
                 return False
         lines.append(line.rstrip())
     if re.match(r'#!', lines[0]):
         if lines[1] != '':
-            logger.error("Expected blank line after: {}\nact line: {}".format(lines[0], lines[1]))
+            logger.error(f"Expected blank line after: {lines[0]}\nact line: {lines[1]}")
             return False
         lines = lines[2:]
         lines.append(f.readline().rstrip())
@@ -460,15 +460,17 @@ def find_header(file_path):
         return False
     if lines[0][0] == '#':
         prefix = '#'
-    elif len(lines[0]) > 1 and lines[0][0:2] == '/*':
+    elif len(lines[0]) > 1 and lines[0][:2] == '/*':
         prefix = ' *'
         lines = lines[1:]
-    elif len(lines[0]) > 1 and lines[0][0:2] == '//':
+    elif len(lines[0]) > 1 and lines[0][:2] == '//':
         prefix = '//'
-    elif len(lines[0]) > 1 and lines[0][0:2] == '--':
+    elif len(lines[0]) > 1 and lines[0][:2] == '--':
         prefix = '--'
     else:
-        logger.error("Line doesn't start with a recognized comment string: {}".format(lines[0]))
+        logger.error(
+            f"Line doesn't start with a recognized comment string: {lines[0]}"
+        )
         return
     # Allow a leading header line
     if re.match(re.escape(prefix) + "[ -=\*]*$", lines[0]):
@@ -483,7 +485,7 @@ def find_header(file_path):
 
 def check_headers(dir):
 
-    logger.info("Checking path: " + dir)
+    logger.info(f"Checking path: {dir}")
 
     file_provider = FileProvider()
     os.chdir(file_provider.repo_dir)
@@ -573,16 +575,16 @@ def check_headers(dir):
         ])
 
     file_path_list = sorted(file_provider.get_files(dir))
-    assert file_path_list, "No files found in {}".format(dir)
+    assert file_path_list, f"No files found in {dir}"
 
-    logger.info("Checking {} files".format(len(file_path_list)))
+    logger.info(f"Checking {len(file_path_list)} files")
     files_with_bad_headers = []
     for file_path in file_path_list:
         if os.path.islink(file_path):
             continue
-        logger.debug("Checking {}".format(file_path))
+        logger.debug(f"Checking {file_path}")
         if not find_header(file_path):
-            logger.error("Invalid or missing header in {}".format(file_path))
+            logger.error(f"Invalid or missing header in {file_path}")
             files_with_bad_headers.append(file_path)
 
     rc = 0
@@ -591,13 +593,19 @@ def check_headers(dir):
         logger.error("Following files didn't have the correct header:\n  {}".format(
             "\n  ".join(files_with_bad_headers)))
 
-    logger.info("Checked {} files".format(len(file_path_list)))
-    logger.info("{} errors".format(len(files_with_bad_headers)))
+    logger.info(f"Checked {len(file_path_list)} files")
+    logger.info(f"{len(files_with_bad_headers)} errors")
     return rc
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--dir', action='store', required=False, default=os.path.abspath(__file__) + "/../../../" , help='Directory to check for the headers')
+    parser.add_argument(
+        '--dir',
+        action='store',
+        required=False,
+        default=f"{os.path.abspath(__file__)}/../../../",
+        help='Directory to check for the headers',
+    )
     parser.add_argument('--debug', action='store_true', required=False, help='Enable debug messages')
 
     args = parser.parse_args()

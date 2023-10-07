@@ -37,8 +37,10 @@ def print_success(dpdk_path):
     print("")
     print("DPDK setup complete!")
     print("A simple loopback test may be run via the following steps:")
-    print("  cd %s" % (dpdk_path))
-    print("  sudo ./%s/app/testpmd -l 0-1  -- --port-topology=loop --auto-start --tx-first --stats-period=3" % (make_tgt))
+    print(f"  cd {dpdk_path}")
+    print(
+        f"  sudo ./{make_tgt}/app/testpmd -l 0-1  -- --port-topology=loop --auto-start --tx-first --stats-period=3"
+    )
 
 def check_output(args, stderr=None):
     return subprocess.Popen(args, stdout=subprocess.PIPE,
@@ -64,41 +66,43 @@ def fpga_slot_str2dbdf(fpga_slot_str):
     cmd = "fpga-describe-local-image-slots"
     # Exec the command first to give an error message
     # if the SDK hasn't been installed.
-    cmd_exec("%s >/dev/null 2>&1" % (cmd))
-    fpga_slots = check_output(cmd).splitlines() 
+    cmd_exec(f"{cmd} >/dev/null 2>&1")
+    fpga_slots = check_output(cmd).splitlines()
     for slot_str in fpga_slots:
         if found == True:
             break
-        logger.debug("slot_str=%s" % slot_str)
-        slot_num = ' '.join(slot_str.split()).split(' ')[1] 
+        logger.debug(f"slot_str={slot_str}")
+        slot_num = ' '.join(slot_str.split()).split(' ')[1]
         if slot_num == fpga_slot_str:
             dbdf = ' '.join(slot_str.split()).split(' ')[4] 
             found = True
     return dbdf 
 
 def setup_dpdk(dpdk_path, fpga_slot_str, eni_dbdf, eni_ethdev):
-    logger.debug("setup_dpdk: dpdk_path=%s, fpga_slot_str=%s" % (dpdk_path, fpga_slot_str))
+    logger.debug(
+        f"setup_dpdk: dpdk_path={dpdk_path}, fpga_slot_str={fpga_slot_str}"
+    )
 
     if os.path.exists(dpdk_path) == False:
-        logger.error("dpdk_path=%s does not exist." % (dpdk_path))
+        logger.error(f"dpdk_path={dpdk_path} does not exist.")
         logger.error("Please specify a dpdk directory that was installed via virtual-ethernet-install.py, exiting")
         sys.exit(1)
 
     fpga_dbdf = fpga_slot_str2dbdf(fpga_slot_str)
     if fpga_dbdf == "None":
-        logger.error("Could not get DBDF for fpga_slot_str=%s" % fpga_slot_str)
+        logger.error(f"Could not get DBDF for fpga_slot_str={fpga_slot_str}")
         sys.exit(1)
 
     # Stash away the current working directory
     cwd = os.getcwd()
     scripts_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-    logger.debug("scripts directory path is %s" % (scripts_path))
+    logger.debug(f"scripts directory path is {scripts_path}")
 
     # cd to the dpdk_path directory
-    os.chdir("%s" % (dpdk_path))
+    os.chdir(f"{dpdk_path}")
 
     if os.path.exists(dpdk_devbind) == False:
-        logger.error("dpdk_devbind=%s does not exist." % (dpdk_devbind))
+        logger.error(f"dpdk_devbind={dpdk_devbind} does not exist.")
         logger.error("Please specify a dpdk directory that was installed via virtual-ethernet-install.py, exiting")
         sys.exit(1)
 
@@ -115,19 +119,19 @@ def setup_dpdk(dpdk_path, fpga_slot_str, eni_dbdf, eni_ethdev):
     load_uio()
 
     # Remove then load igb_uio.ko
-    cmd_exec("rmmod ./%s/kmod/igb_uio.ko >/dev/null 2>&1" % (make_tgt), False)
-    cmd_exec("insmod ./%s/kmod/igb_uio.ko" % (make_tgt))
+    cmd_exec(f"rmmod ./{make_tgt}/kmod/igb_uio.ko >/dev/null 2>&1", False)
+    cmd_exec(f"insmod ./{make_tgt}/kmod/igb_uio.ko")
 
     # Bind the FPGA to to DPDK
-    cmd_exec("%s --bind=igb_uio %s" % (dpdk_devbind, fpga_dbdf))
+    cmd_exec(f"{dpdk_devbind} --bind=igb_uio {fpga_dbdf}")
 
     # Bind the ENI device to to DPDK (optional)
     if eni_dbdf != "None" and eni_ethdev != "None":
-        cmd_exec("ifdown %s" % (eni_ethdev))
-        cmd_exec("%s --bind=igb_uio %s" % (dpdk_devbind, eni_dbdf))
+        cmd_exec(f"ifdown {eni_ethdev}")
+        cmd_exec(f"{dpdk_devbind} --bind=igb_uio {eni_dbdf}")
 
     # cd back to the original directory
-    os.chdir("%s" % (cwd))
+    os.chdir(f"{cwd}")
 
     # Print a success message
     print_success(dpdk_path)
@@ -147,10 +151,7 @@ def main():
         help='Enable debug messages')
     args = parser.parse_args()
 
-    logging_level = logging.INFO
-    if args.debug:
-        logging_level = logging.DEBUG
-
+    logging_level = logging.DEBUG if args.debug else logging.INFO
     logging_format = '%(levelname)s:%(asctime)s: %(message)s'
 
     logger.setLevel(logging_level)

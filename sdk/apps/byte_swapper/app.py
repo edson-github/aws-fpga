@@ -33,7 +33,7 @@ def get_fpga_slot_status():
     return fpga.slot_state()
 
 def sig_handler(sig, frame):
-    logger.info("Signal ({}) received!".format(sig))
+    logger.info(f"Signal ({sig}) received!")
     fpga.clear_fpga()
     fpga.clean_up()
     sys.exit(0)

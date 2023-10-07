@@ -22,8 +22,7 @@
 import ctypes
 
 
-_libraries = {}
-_libraries['libfpga_mgmt.so'] = ctypes.CDLL('libfpga_mgmt.so')
+_libraries = {'libfpga_mgmt.so': ctypes.CDLL('libfpga_mgmt.so')}
 # if local wordsize is same as target, keep ctypes pointer function.
 if ctypes.sizeof(ctypes.c_void_p) == 8:
     POINTER_T = ctypes.POINTER

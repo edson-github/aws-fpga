@@ -53,16 +53,20 @@ class TestPyBindings(AwsFpgaTestBase):
     Test all example CLs with different strategies and clock recipes.
     '''
 
-    def setup_class(cls):
+    def setup_class(self):
         '''
         Do any setup required for tests.
         '''
-        AwsFpgaTestBase.setup_class(cls, __file__)
+        AwsFpgaTestBase.setup_class(self, __file__)
 
         AwsFpgaTestBase.assert_sdk_setup()
 
-        assert AwsFpgaTestBase.running_on_f1_instance(), "This test must be run on an F1 instance. Running on {}".format(aws_fpga_test_utils.get_instance_type())
-        (cls.cl_hello_world_agfi, cl_hello_world_afi) = cls.get_agfi_from_readme('cl_hello_world')
+        assert (
+            AwsFpgaTestBase.running_on_f1_instance()
+        ), f"This test must be run on an F1 instance. Running on {aws_fpga_test_utils.get_instance_type()}"
+        self.cl_hello_world_agfi, cl_hello_world_afi = self.get_agfi_from_readme(
+            'cl_hello_world'
+        )
 
     def setup_method(self, test_method):
         os.putenv('BSWAPPER_AFI', self.cl_hello_world_agfi)
@@ -75,15 +79,15 @@ class TestPyBindings(AwsFpgaTestBase):
     def stop_server(self):
         if hasattr(self, 'pid'):
             cmd = ['sudo', 'kill', '-2', str(self.pid)]
-            logger.info("Signalling {}".format(self.pid))
-            logger.info("using command {}".format(cmd))
+            logger.info(f"Signalling {self.pid}")
+            logger.info(f"using command {cmd}")
             subprocess.call(cmd)
 
     def test_flask_app(self):
         server_script = os.environ['SDK_DIR'] + "/tests/test_py.sh"
         cmd = ['sudo', '-E',  server_script]
         try:
-            logger.info("Starting server using {}".format(cmd))
+            logger.info(f"Starting server using {cmd}")
             server = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if  server.stdout is not None:
                 server.stdout.flush()
@@ -91,7 +95,7 @@ class TestPyBindings(AwsFpgaTestBase):
             mo = re.match("CHILDPID (\d+)?", line)
             if mo is not None:
                 self.pid = mo.group(1)
-                logger.info("Server PID: {}".format(self.pid))
+                logger.info(f"Server PID: {self.pid}")
         except:
             logger.error(traceback.print_exc())
         max_retries = 30
@@ -106,13 +110,12 @@ class TestPyBindings(AwsFpgaTestBase):
             try:
                 r1 = requests.get('http://127.0.0.1:5000/status')
                 if r1.status_code != 200:
-                    logger.info("Recived response {}".format(r1.status_code))
+                    logger.info(f"Recived response {r1.status_code}")
+                elif r1.text == "FPGA_STATUS_LOADED":
+                    logger.info("Server ready")
+                    break
                 else:
-                    if  r1.text == "FPGA_STATUS_LOADED":
-                        logger.info("Server ready")
-                        break
-                    else:
-                        logger.info("FPGA not loaded with AFI yet.")
+                    logger.info("FPGA not loaded with AFI yet.")
             except:
                 logger.info("Exception caught during status check.")
                 logger.info(traceback.print_exc())
@@ -122,12 +125,12 @@ class TestPyBindings(AwsFpgaTestBase):
         r2 = requests.get('http://127.0.0.1:5000/', params=payload)
         logger.info("Stopping server")
         self.stop_server()
-        if  r2.status_code == 200:
+        if r2.status_code == 200:
             swapped_val = r2.text
-            logger.info("Swapped value: {}".format(swapped_val))
+            logger.info(f"Swapped value: {swapped_val}")
             if swapped_val != "0x78563412":
                 logger.info("Swapped value not correct!")
                 sys.exit(2)
         else:
-            logger.info("Status received {}".format(r.status_code))
+            logger.info(f"Status received {r.status_code}")
             sys.exit(3)

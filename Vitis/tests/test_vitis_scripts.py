@@ -29,7 +29,7 @@ try:
     from aws_fpga_test_utils.AwsFpgaTestBase import AwsFpgaTestBase
 except ImportError as e:
     traceback.print_tb(sys.exc_info()[2])
-    print("error: {}\nMake sure to source hdk_setup.sh".format(sys.exc_info()[1]))
+    print(f"error: {sys.exc_info()[1]}\nMake sure to source hdk_setup.sh")
     sys.exit(1)
 
 logger = aws_fpga_utils.get_logger(__name__)

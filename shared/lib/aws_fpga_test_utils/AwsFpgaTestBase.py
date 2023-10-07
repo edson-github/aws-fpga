@@ -21,6 +21,7 @@ Base class for pytest modules
 See TESTING.md for details.
 '''
 
+
 from __future__ import print_function
 import boto3
 import os
@@ -38,7 +39,7 @@ try:
     import aws_fpga_utils
 except ImportError as e:
     traceback.print_tb(sys.exc_info()[2])
-    print("error: {}\nMake sure to source hdk_setup.sh".format(sys.exc_info()[1]))
+    print(f"error: {sys.exc_info()[1]}\nMake sure to source hdk_setup.sh")
     sys.exit(1)
 
 logger = aws_fpga_utils.get_logger(__name__)
@@ -87,14 +88,18 @@ class AwsFpgaTestBase(object):
         # SDAccel locations
         # Need to move to either a config file somewhere or a subclass
         AwsFpgaTestBase.xilinx_sdaccel_examples_prefix_path = "SDAccel/examples/xilinx"
-        AwsFpgaTestBase.xilinx_sdaccel_examples_dir = AwsFpgaTestBase.git_repo_dir + "/" + AwsFpgaTestBase.xilinx_sdaccel_examples_prefix_path
-        AwsFpgaTestBase.xilinx_sdaccel_examples_list_file = AwsFpgaTestBase.WORKSPACE + "/sdaccel_examples_list.json"
+        AwsFpgaTestBase.xilinx_sdaccel_examples_dir = f"{AwsFpgaTestBase.git_repo_dir}/{AwsFpgaTestBase.xilinx_sdaccel_examples_prefix_path}"
+        AwsFpgaTestBase.xilinx_sdaccel_examples_list_file = (
+            f"{AwsFpgaTestBase.WORKSPACE}/sdaccel_examples_list.json"
+        )
 
         # Vitis locations
         # Need to move to either a config file somewhere or a subclass
         AwsFpgaTestBase.xilinx_vitis_examples_prefix_path = "Vitis/examples/xilinx"
-        AwsFpgaTestBase.xilinx_vitis_examples_dir = AwsFpgaTestBase.git_repo_dir + "/" + AwsFpgaTestBase.xilinx_vitis_examples_prefix_path
-        AwsFpgaTestBase.xilinx_vitis_examples_list_file = AwsFpgaTestBase.WORKSPACE + "/vitis_examples_list.json"
+        AwsFpgaTestBase.xilinx_vitis_examples_dir = f"{AwsFpgaTestBase.git_repo_dir}/{AwsFpgaTestBase.xilinx_vitis_examples_prefix_path}"
+        AwsFpgaTestBase.xilinx_vitis_examples_list_file = (
+            f"{AwsFpgaTestBase.WORKSPACE}/vitis_examples_list.json"
+        )
 
         if 'WORKSPACE' in os.environ:
             assert os.environ['WORKSPACE'] == AwsFpgaTestBase.git_repo_dir, "WORKSPACE incorrect"
@@ -102,7 +107,7 @@ class AwsFpgaTestBase(object):
             os.environ['WORKSPACE'] = AwsFpgaTestBase.WORKSPACE
         if 'BUILD_TAG' not in os.environ:
             os.environ['BUILD_TAG'] = 'test'
-            logger.info('Set BUILD_TAG to {}'.format(os.environ['BUILD_TAG']))
+            logger.info(f"Set BUILD_TAG to {os.environ['BUILD_TAG']}")
         AwsFpgaTestBase.instance_type = aws_fpga_test_utils.get_instance_type()
         AwsFpgaTestBase.num_slots = aws_fpga_test_utils.get_num_fpga_slots(AwsFpgaTestBase.instance_type)
         return
@@ -121,36 +126,76 @@ class AwsFpgaTestBase(object):
 
     @staticmethod
     def assert_hdk_setup():
-        assert 'AWS_FPGA_REPO_DIR' in os.environ, "AWS_FPGA_REPO_DIR not set. source {}/hdk_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert os.environ['AWS_FPGA_REPO_DIR'] == AwsFpgaTestBase.git_repo_dir, "AWS_FPGA_REPO_DIR not set to the repo dir. source {}/hdk_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert 'HDK_DIR' in os.environ, "HDK_DIR not set. source {}/hdk_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert os.environ['HDK_DIR'] == os.path.join(AwsFpgaTestBase.git_repo_dir, 'hdk'), "HDK_DIR incorrect. source {}/hdk_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
+        assert (
+            'AWS_FPGA_REPO_DIR' in os.environ
+        ), f"AWS_FPGA_REPO_DIR not set. source {AwsFpgaTestBase.git_repo_dir}/hdk_setup.sh"
+        assert (
+            os.environ['AWS_FPGA_REPO_DIR'] == AwsFpgaTestBase.git_repo_dir
+        ), f"AWS_FPGA_REPO_DIR not set to the repo dir. source {AwsFpgaTestBase.git_repo_dir}/hdk_setup.sh"
+        assert (
+            'HDK_DIR' in os.environ
+        ), f"HDK_DIR not set. source {AwsFpgaTestBase.git_repo_dir}/hdk_setup.sh"
+        assert os.environ['HDK_DIR'] == os.path.join(
+            AwsFpgaTestBase.git_repo_dir, 'hdk'
+        ), f"HDK_DIR incorrect. source {AwsFpgaTestBase.git_repo_dir}/hdk_setup.sh"
 
     @staticmethod
     def assert_sdk_setup():
-        assert 'SDK_DIR' in os.environ, "SDK_DIR not set. source {}/sdk_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert os.environ['SDK_DIR'] == os.path.join(AwsFpgaTestBase.git_repo_dir, 'sdk'), "SDK_DIR incorrect. source {}/sdk_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
+        assert (
+            'SDK_DIR' in os.environ
+        ), f"SDK_DIR not set. source {AwsFpgaTestBase.git_repo_dir}/sdk_setup.sh"
+        assert os.environ['SDK_DIR'] == os.path.join(
+            AwsFpgaTestBase.git_repo_dir, 'sdk'
+        ), f"SDK_DIR incorrect. source {AwsFpgaTestBase.git_repo_dir}/sdk_setup.sh"
 
     @staticmethod
     def assert_sdaccel_setup():
-        assert 'AWS_FPGA_REPO_DIR' in os.environ, "AWS_FPGA_REPO_DIR not set. source {}/sdaccel_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert os.environ['AWS_FPGA_REPO_DIR'] == AwsFpgaTestBase.git_repo_dir, "AWS_FPGA_REPO_DIR not set to the repo dir. source {}/sdaccel_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert 'SDK_DIR' in os.environ, "SDK_DIR not set. source {}/sdaccel_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert os.environ['SDK_DIR'] == os.path.join(AwsFpgaTestBase.git_repo_dir, 'sdk'), "SDK_DIR incorrect. source {}/sdaccel_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert 'SDACCEL_DIR' in os.environ, "SDACCEL_DIR not set. source {}/sdaccel_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert os.environ['SDACCEL_DIR'] == os.path.join(AwsFpgaTestBase.git_repo_dir, 'SDAccel'), "SDACCEL_DIR incorrect. source {}/sdaccel_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert os.environ.get('AWS_PLATFORM') != 'None', "Environment Var AWS_PLATFORM not set. source {}/sdaccel_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
+        assert (
+            'AWS_FPGA_REPO_DIR' in os.environ
+        ), f"AWS_FPGA_REPO_DIR not set. source {AwsFpgaTestBase.git_repo_dir}/sdaccel_setup.sh"
+        assert (
+            os.environ['AWS_FPGA_REPO_DIR'] == AwsFpgaTestBase.git_repo_dir
+        ), f"AWS_FPGA_REPO_DIR not set to the repo dir. source {AwsFpgaTestBase.git_repo_dir}/sdaccel_setup.sh"
+        assert (
+            'SDK_DIR' in os.environ
+        ), f"SDK_DIR not set. source {AwsFpgaTestBase.git_repo_dir}/sdaccel_setup.sh"
+        assert os.environ['SDK_DIR'] == os.path.join(
+            AwsFpgaTestBase.git_repo_dir, 'sdk'
+        ), f"SDK_DIR incorrect. source {AwsFpgaTestBase.git_repo_dir}/sdaccel_setup.sh"
+        assert (
+            'SDACCEL_DIR' in os.environ
+        ), f"SDACCEL_DIR not set. source {AwsFpgaTestBase.git_repo_dir}/sdaccel_setup.sh"
+        assert os.environ['SDACCEL_DIR'] == os.path.join(
+            AwsFpgaTestBase.git_repo_dir, 'SDAccel'
+        ), f"SDACCEL_DIR incorrect. source {AwsFpgaTestBase.git_repo_dir}/sdaccel_setup.sh"
+        assert (
+            os.environ.get('AWS_PLATFORM') != 'None'
+        ), f"Environment Var AWS_PLATFORM not set. source {AwsFpgaTestBase.git_repo_dir}/sdaccel_setup.sh"
         assert os.environ.get('XILINX_SDX') != 'None', "Environment Var XILINX_SDX not set. Please check the AMI."
 
     @staticmethod
     def assert_vitis_setup():
-        assert 'AWS_FPGA_REPO_DIR' in os.environ, "AWS_FPGA_REPO_DIR not set. source {}/vitis_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert os.environ['AWS_FPGA_REPO_DIR'] == AwsFpgaTestBase.git_repo_dir, "AWS_FPGA_REPO_DIR not set to the repo dir. source {}/vitis_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert 'SDK_DIR' in os.environ, "SDK_DIR not set. source {}/vitis_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert os.environ['SDK_DIR'] == os.path.join(AwsFpgaTestBase.git_repo_dir, 'sdk'), "SDK_DIR incorrect. source {}/vitis_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert 'VITIS_DIR' in os.environ, "VITIS_DIR not set. source {}/vitis_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert os.environ['VITIS_DIR'] == os.path.join(AwsFpgaTestBase.git_repo_dir, 'Vitis'), "VITIS_DIR incorrect. source {}/vitis_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
-        assert os.environ.get('AWS_PLATFORM') != 'None', "Environment Var AWS_PLATFORM not set. source {}/vitis_setup.sh".format(AwsFpgaTestBase.git_repo_dir)
+        assert (
+            'AWS_FPGA_REPO_DIR' in os.environ
+        ), f"AWS_FPGA_REPO_DIR not set. source {AwsFpgaTestBase.git_repo_dir}/vitis_setup.sh"
+        assert (
+            os.environ['AWS_FPGA_REPO_DIR'] == AwsFpgaTestBase.git_repo_dir
+        ), f"AWS_FPGA_REPO_DIR not set to the repo dir. source {AwsFpgaTestBase.git_repo_dir}/vitis_setup.sh"
+        assert (
+            'SDK_DIR' in os.environ
+        ), f"SDK_DIR not set. source {AwsFpgaTestBase.git_repo_dir}/vitis_setup.sh"
+        assert os.environ['SDK_DIR'] == os.path.join(
+            AwsFpgaTestBase.git_repo_dir, 'sdk'
+        ), f"SDK_DIR incorrect. source {AwsFpgaTestBase.git_repo_dir}/vitis_setup.sh"
+        assert (
+            'VITIS_DIR' in os.environ
+        ), f"VITIS_DIR not set. source {AwsFpgaTestBase.git_repo_dir}/vitis_setup.sh"
+        assert os.environ['VITIS_DIR'] == os.path.join(
+            AwsFpgaTestBase.git_repo_dir, 'Vitis'
+        ), f"VITIS_DIR incorrect. source {AwsFpgaTestBase.git_repo_dir}/vitis_setup.sh"
+        assert (
+            os.environ.get('AWS_PLATFORM') != 'None'
+        ), f"Environment Var AWS_PLATFORM not set. source {AwsFpgaTestBase.git_repo_dir}/vitis_setup.sh"
         assert os.environ.get('XILINX_VITIS') != 'None', "Environment Var XILINX_VITIS not set. Please check the AMI."
 
     @staticmethod
@@ -167,63 +212,75 @@ class AwsFpgaTestBase(object):
 
         AwsFpgaTestBase.fpga_clear_local_image(slot)
 
-        logger.info("Loading MSI-X workaround into slot {}".format(slot))
+        logger.info(f"Loading MSI-X workaround into slot {slot}")
         AwsFpgaTestBase.fpga_load_local_image(AwsFpgaTestBase.msix_agfi, slot)
 
-        logger.info("Checking slot {} AFI Load status".format(slot))
-        assert AwsFpgaTestBase.check_fpga_afi_loaded(AwsFpgaTestBase.msix_agfi, slot), "{} not loaded in slot {}".format(AwsFpgaTestBase.msix_agfi, slot)
+        logger.info(f"Checking slot {slot} AFI Load status")
+        assert AwsFpgaTestBase.check_fpga_afi_loaded(
+            AwsFpgaTestBase.msix_agfi, slot
+        ), f"{AwsFpgaTestBase.msix_agfi} not loaded in slot {slot}"
 
         AwsFpgaTestBase.fpga_clear_local_image(slot)
 
     @staticmethod
     def run_cmd(cmd, echo=False, check=True):
         if echo:
-            logger.info("Running: {}".format(cmd))
+            logger.info(f"Running: {cmd}")
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout_data, stderr_data) = p.communicate()
         stdout_lines = stdout_data.split('\n')
         stderr_lines = stderr_data.split('\n')
         if check and p.returncode:
-            logger.error("Cmd failed with rc={}\ncmd: {}\nstdout:\n{}\nstderr:\n{}".format(
-                p.returncode, cmd, stdout_data, stderr_data))
+            logger.error(
+                f"Cmd failed with rc={p.returncode}\ncmd: {cmd}\nstdout:\n{stdout_data}\nstderr:\n{stderr_data}"
+            )
         elif echo:
-            logger.info("rc={}\nstdout:\n{}\nstderr:\n{}\n".format(p.returncode, stdout_data, stderr_data))
+            logger.info(
+                f"rc={p.returncode}\nstdout:\n{stdout_data}\nstderr:\n{stderr_data}\n"
+            )
         return (p.returncode, stdout_lines, stderr_lines)
 
     @staticmethod
     def run_hdk_cmd(cmd, echo=False, check=True):
-        source_hdk_cmd = "source {}/hdk_setup.sh &> /dev/null".format(AwsFpgaTestBase.git_repo_dir)
-        cmd = source_hdk_cmd + " && " + cmd
+        source_hdk_cmd = (
+            f"source {AwsFpgaTestBase.git_repo_dir}/hdk_setup.sh &> /dev/null"
+        )
+        cmd = f"{source_hdk_cmd} && {cmd}"
         return AwsFpgaTestBase.run_cmd(cmd, echo, check)
 
     @staticmethod
     def run_sdk_cmd(cmd, echo=False, check=True):
-        source_sdk_cmd = "source {}/sdk_setup.sh &> /dev/null".format(AwsFpgaTestBase.git_repo_dir)
-        cmd = source_sdk_cmd + " && " + cmd
+        source_sdk_cmd = (
+            f"source {AwsFpgaTestBase.git_repo_dir}/sdk_setup.sh &> /dev/null"
+        )
+        cmd = f"{source_sdk_cmd} && {cmd}"
         return AwsFpgaTestBase.run_cmd(cmd, echo, check)
 
     @staticmethod
     def run_sdaccel_cmd(cmd, echo=False, check=True):
-        source_sdaccel_cmd = "source {}/sdaccel_setup.sh &> /dev/null".format(AwsFpgaTestBase.git_repo_dir)
-        cmd = source_sdaccel_cmd + " && " + cmd
+        source_sdaccel_cmd = (
+            f"source {AwsFpgaTestBase.git_repo_dir}/sdaccel_setup.sh &> /dev/null"
+        )
+        cmd = f"{source_sdaccel_cmd} && {cmd}"
         return AwsFpgaTestBase.run_cmd(cmd, echo, check)
 
     @staticmethod
     def run_vitis_cmd(cmd, echo=False, check=True):
-        source_vitis_cmd = "source {}/vitis_setup.sh &> /dev/null".format(AwsFpgaTestBase.git_repo_dir)
-        cmd = source_vitis_cmd + " && " + cmd
+        source_vitis_cmd = (
+            f"source {AwsFpgaTestBase.git_repo_dir}/vitis_setup.sh &> /dev/null"
+        )
+        cmd = f"{source_vitis_cmd} && {cmd}"
         return AwsFpgaTestBase.run_cmd(cmd, echo, check)
 
     @staticmethod
     def get_shell_version():
         shell_link = os.path.join(AwsFpgaTestBase.WORKSPACE, 'hdk/common/shell_stable')
         link = basename(os.readlink(shell_link))
-        shell_version = re.sub('^shell_v', '0x', link)
-        return shell_version
+        return re.sub('^shell_v', '0x', link)
 
     @staticmethod
     def get_cl_dir(cl):
-        return "{}/hdk/cl/examples/{}".format(AwsFpgaTestBase.WORKSPACE, cl)
+        return f"{AwsFpgaTestBase.WORKSPACE}/hdk/cl/examples/{cl}"
 
     @staticmethod
     def get_cl_to_aws_dir(cl):
@@ -245,7 +302,7 @@ class AwsFpgaTestBase(object):
         '''
         assert option_tag != ''
         assert xilinxVersion != ''
-        return "jenkins/{}/cl/{}/{}/{}/dcp".format(os.environ['BUILD_TAG'], xilinxVersion, cl, option_tag)
+        return f"jenkins/{os.environ['BUILD_TAG']}/cl/{xilinxVersion}/{cl}/{option_tag}/dcp"
 
     @staticmethod
     def get_cl_s3_afi_tag(cl, option_tag, xilinxVersion):
@@ -255,7 +312,7 @@ class AwsFpgaTestBase(object):
         '''
         assert option_tag != ''
         assert xilinxVersion != ''
-        return "jenkins/{}/cl/{}/{}/{}/create-afi/afi_ids.txt".format(os.environ['BUILD_TAG'], xilinxVersion, cl, option_tag)
+        return f"jenkins/{os.environ['BUILD_TAG']}/cl/{xilinxVersion}/{cl}/{option_tag}/create-afi/afi_ids.txt"
 
     @staticmethod
     def get_sdaccel_xclbin_dir(examplePath):
@@ -263,7 +320,10 @@ class AwsFpgaTestBase(object):
 
     @staticmethod
     def get_vitis_xclbin_dir(examplePath, target='hw'):
-        return os.path.join(AwsFpgaTestBase.get_sdaccel_example_fullpath(examplePath=examplePath), "build_dir.{}.xilinx_aws-vu9p-f1_shell-v04261818_201920_3".format(target))
+        return os.path.join(
+            AwsFpgaTestBase.get_sdaccel_example_fullpath(examplePath=examplePath),
+            f"build_dir.{target}.xilinx_aws-vu9p-f1_shell-v04261818_201920_3",
+        )
 
     @staticmethod
     def get_sdaccel_example_s3_root_tag(examplePath, target, rteName, xilinxVersion):
@@ -278,7 +338,7 @@ class AwsFpgaTestBase(object):
         assert rteName != ''
         assert xilinxVersion != ''
         example_relative_path = os.path.relpath(examplePath, AwsFpgaTestBase.xilinx_sdaccel_examples_prefix_path)
-        return "jenkins/{}/SDAccel/{}/{}/{}/{}".format(os.environ['BUILD_TAG'], xilinxVersion, rteName, example_relative_path, target)
+        return f"jenkins/{os.environ['BUILD_TAG']}/SDAccel/{xilinxVersion}/{rteName}/{example_relative_path}/{target}"
 
     @staticmethod
     def get_vitis_example_s3_root_tag(examplePath, target, rteName, xilinxVersion):
@@ -293,7 +353,7 @@ class AwsFpgaTestBase(object):
         assert rteName != ''
         assert xilinxVersion != ''
         example_relative_path = os.path.relpath(examplePath, AwsFpgaTestBase.xilinx_vitis_examples_prefix_path)
-        return "jenkins/{}/Vitis/{}/{}/{}/{}".format(os.environ['BUILD_TAG'], xilinxVersion, rteName, example_relative_path, target)
+        return f"jenkins/{os.environ['BUILD_TAG']}/Vitis/{xilinxVersion}/{rteName}/{example_relative_path}/{target}"
 
     @staticmethod
     def get_sdaccel_example_s3_xclbin_tag(examplePath, target, rteName, xilinxVersion):
@@ -309,7 +369,7 @@ class AwsFpgaTestBase(object):
         assert xilinxVersion != ''
         root_tag = AwsFpgaTestBase.get_sdaccel_example_s3_root_tag(examplePath, target, rteName, xilinxVersion)
 
-        return "{}/xclbin".format(root_tag)
+        return f"{root_tag}/xclbin"
 
     @staticmethod
     def get_vitis_example_s3_xclbin_tag(examplePath, target, rteName, xilinxVersion):
@@ -325,7 +385,7 @@ class AwsFpgaTestBase(object):
         assert xilinxVersion != ''
         root_tag = AwsFpgaTestBase.get_vitis_example_s3_root_tag(examplePath, target, rteName, xilinxVersion)
 
-        return "{}/xclbin".format(root_tag)
+        return f"{root_tag}/xclbin"
 
     @staticmethod
     def get_sdaccel_example_s3_dcp_tag(examplePath, target, rteName, xilinxVersion):
@@ -341,7 +401,7 @@ class AwsFpgaTestBase(object):
         assert xilinxVersion != ''
         root_tag = AwsFpgaTestBase.get_sdaccel_example_s3_root_tag(examplePath, target, rteName, xilinxVersion)
 
-        return "{}/dcp".format(root_tag)
+        return f"{root_tag}/dcp"
 
     @staticmethod
     def get_vitis_example_s3_dcp_tag(examplePath, target, rteName, xilinxVersion):
@@ -357,7 +417,7 @@ class AwsFpgaTestBase(object):
         assert xilinxVersion != ''
         root_tag = AwsFpgaTestBase.get_vitis_example_s3_root_tag(examplePath, target, rteName, xilinxVersion)
 
-        return "{}/dcp".format(root_tag)
+        return f"{root_tag}/dcp"
 
     @staticmethod
     def get_sdaccel_example_s3_afi_tag(examplePath, target, rteName, xilinxVersion):
@@ -372,7 +432,7 @@ class AwsFpgaTestBase(object):
         assert xilinxVersion != ''
         root_tag = AwsFpgaTestBase.get_sdaccel_example_s3_root_tag(examplePath, target, rteName, xilinxVersion)
 
-        return "{}/create-afi/afi-ids.txt".format(root_tag)
+        return f"{root_tag}/create-afi/afi-ids.txt"
 
     @staticmethod
     def get_vitis_example_s3_afi_tag(examplePath, target, rteName, xilinxVersion):
@@ -387,7 +447,7 @@ class AwsFpgaTestBase(object):
         assert xilinxVersion != ''
         root_tag = AwsFpgaTestBase.get_vitis_example_s3_root_tag(examplePath, target, rteName, xilinxVersion)
 
-        return "{}/create-afi/afi-ids.txt".format(root_tag)
+        return f"{root_tag}/create-afi/afi-ids.txt"
 
     @staticmethod
     def get_sdaccel_example_run_cmd(examplePath, xilinxVersion):
@@ -398,22 +458,26 @@ class AwsFpgaTestBase(object):
         description = AwsFpgaTestBase.get_sdaccel_example_description(examplePath)
         if description.get("em_cmd", None):
             run_cmd = description.get("em_cmd", None)
-        else:
-            if description.get("host_exe", None):
-                run_cmd = "./{}".format(description.get("host_exe", None))
-                if description.get("cmd_args", None):
-                   if "PROJECT" not in description.get("cmd_args", None) and "BUILD" not in description.get("cmd_args", None):
-                       if "2019.1" not in xilinxVersion:
-                           run_cmd += " {}".format(description.get("cmd_args", None))
-                       else:
-                           run_cmd += " {}".format(description.get("cmd_args", None).replace(".xclbin",".hw.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xclbin"))
-                   else:
-                       if "2019.1" not in xilinxVersion:
-                           run_cmd += " {}".format((description.get("cmd_args", None).replace("PROJECT",".")).replace("BUILD","./xclbin"))
-                       else:
-                           run_cmd += " {}".format(((description.get("cmd_args", None).replace(".xclbin",".hw.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.awsxclbin")).replace("PROJECT",".")).replace("BUILD","./xclbin"))
+        elif description.get("host_exe", None):
+            run_cmd = f'./{description.get("host_exe", None)}'
+            if description.get("cmd_args", None):
+                if "PROJECT" in description.get(
+                    "cmd_args", None
+                ) or "BUILD" in description.get("cmd_args", None):
+                    if "2019.1" not in xilinxVersion:
+                        run_cmd += f' {description.get("cmd_args", None).replace("PROJECT", ".").replace("BUILD", "./xclbin")}'
+                    else:
+                        run_cmd += f' {description.get("cmd_args", None).replace(".xclbin", ".hw.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.awsxclbin").replace("PROJECT", ".").replace("BUILD", "./xclbin")}'
 
-        assert run_cmd is not None, "Could not find run_cmd(em_cmd) or (host_exe) in the example description here {}".format(examplePath)
+                else:
+                    run_cmd += (
+                        f' {description.get("cmd_args", None)}'
+                        if "2019.1" not in xilinxVersion
+                        else f' {description.get("cmd_args", None).replace(".xclbin", ".hw.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xclbin")}'
+                    )
+        assert (
+            run_cmd is not None
+        ), f"Could not find run_cmd(em_cmd) or (host_exe) in the example description here {examplePath}"
 
         return run_cmd
 
@@ -426,23 +490,26 @@ class AwsFpgaTestBase(object):
         description = AwsFpgaTestBase.get_vitis_example_description(examplePath)
 
         host_description = description.get("host", None)
-        assert host_description is not None, "Could not find host key in the description.json here {}".format(
-            examplePath)
+        assert (
+            host_description is not None
+        ), f"Could not find host key in the description.json here {examplePath}"
 
         launch_description = description.get("launch", None)
-        assert launch_description is not None, "Could not find launch/cmd_args key in the description.json here {}".format(
-            examplePath)
+        assert (
+            launch_description is not None
+        ), f"Could not find launch/cmd_args key in the description.json here {examplePath}"
 
         if host_description.get("host_exe", None):
-            run_cmd = "./{}".format(host_description.get("host_exe", None))
+            run_cmd = f'./{host_description.get("host_exe", None)}'
 
         if launch_description[0].get("cmd_args", None):
             run_cmd += " {}".format(((launch_description[0].get("cmd_args", None).replace(".xclbin", ".awsxclbin")).replace(
                         "PROJECT", ".")).replace("BUILD", "./build_dir.hw.xilinx_aws-vu9p-f1_shell-v04261818_201920_3")).replace(
                 "REPO_DIR", AwsFpgaTestBase.get_vitis_example_base_dir(xilinxVersion))
 
-        assert run_cmd is not None, "Could not find run_cmd(em_cmd) or (host_exe) in the example description here {}".format(
-            examplePath)
+        assert (
+            run_cmd is not None
+        ), f"Could not find run_cmd(em_cmd) or (host_exe) in the example description here {examplePath}"
 
         return run_cmd
 
@@ -455,8 +522,7 @@ class AwsFpgaTestBase(object):
         example_description = AwsFpgaTestBase.assert_non_zero_file(os.path.join(AwsFpgaTestBase.get_sdaccel_example_fullpath(examplePath), "description.json"))
 
         with open(example_description) as json_data:
-            description = json.load(json_data)
-            return description
+            return json.load(json_data)
 
     @staticmethod
     def get_vitis_example_description(examplePath):
@@ -467,20 +533,19 @@ class AwsFpgaTestBase(object):
         example_description = AwsFpgaTestBase.assert_non_zero_file(os.path.join(AwsFpgaTestBase.get_vitis_example_fullpath(examplePath), "description.json"))
 
         with open(example_description) as json_data:
-            description = json.load(json_data)
-            return description
+            return json.load(json_data)
 
     @staticmethod
     def get_sdaccel_example_fullpath(examplePath):
-        return "{}/{}/".format(AwsFpgaTestBase.WORKSPACE, examplePath)
+        return f"{AwsFpgaTestBase.WORKSPACE}/{examplePath}/"
 
     @staticmethod
     def get_vitis_example_fullpath(examplePath):
-        return "{}/{}/".format(AwsFpgaTestBase.WORKSPACE, examplePath)
+        return f"{AwsFpgaTestBase.WORKSPACE}/{examplePath}/"
 
     @staticmethod
     def get_vitis_example_base_dir(xilinxVersion):
-        return "{}/Vitis/examples/xilinx_{}/".format(AwsFpgaTestBase.WORKSPACE, xilinxVersion)
+        return f"{AwsFpgaTestBase.WORKSPACE}/Vitis/examples/xilinx_{xilinxVersion}/"
 
     @staticmethod
     def fetch_sdaccel_xclbin_folder_from_s3(examplePath, rteName, xilinxVersion):
@@ -495,7 +560,9 @@ class AwsFpgaTestBase(object):
         xclbin_path = AwsFpgaTestBase.get_sdaccel_xclbin_dir(examplePath=examplePath)
 
         logger.debug(xclbin_path)
-        assert os.path.exists(xclbin_path), "SDAccel Example xclbin path={} does not exist".format(xclbin_path)
+        assert os.path.exists(
+            xclbin_path
+        ), f"SDAccel Example xclbin path={xclbin_path} does not exist"
 
         os.chdir(cwd)
         return xclbin_path
@@ -513,7 +580,9 @@ class AwsFpgaTestBase(object):
         xclbin_path = AwsFpgaTestBase.get_vitis_xclbin_dir(examplePath=examplePath)
 
         logger.debug(xclbin_path)
-        assert os.path.exists(xclbin_path), "Vitis Example xclbin path={} does not exist".format(xclbin_path)
+        assert os.path.exists(
+            xclbin_path
+        ), f"Vitis Example xclbin path={xclbin_path} does not exist"
 
         os.chdir(cwd)
         return xclbin_path
@@ -524,10 +593,13 @@ class AwsFpgaTestBase(object):
         assert rteName != ''
         assert xilinxVersion != ''
         xclbin_path = AwsFpgaTestBase.fetch_sdaccel_xclbin_folder_from_s3(examplePath, rteName, xilinxVersion)
-        logger.info("Checking that a non zero size xclbin file exists in {}".format(xclbin_path))
+        logger.info(
+            f"Checking that a non zero size xclbin file exists in {xclbin_path}"
+        )
 
-        xclbin = AwsFpgaTestBase.assert_non_zero_file(os.path.join(xclbin_path, "*.{}.*.xclbin".format("hw")))
-        return xclbin
+        return AwsFpgaTestBase.assert_non_zero_file(
+            os.path.join(xclbin_path, '*.hw.*.xclbin')
+        )
 
     @staticmethod
     def get_vitis_xclbin_file(examplePath, rteName, xilinxVersion):
@@ -535,10 +607,13 @@ class AwsFpgaTestBase(object):
         assert rteName != ''
         assert xilinxVersion != ''
         xclbin_path = AwsFpgaTestBase.fetch_vitis_xclbin_folder_from_s3(examplePath, rteName, xilinxVersion)
-        logger.info("Checking that a non zero size xclbin file exists in {}".format(xclbin_path))
+        logger.info(
+            f"Checking that a non zero size xclbin file exists in {xclbin_path}"
+        )
 
-        xclbin = AwsFpgaTestBase.assert_non_zero_file(os.path.join(xclbin_path, "*.xclbin"))
-        return xclbin
+        return AwsFpgaTestBase.assert_non_zero_file(
+            os.path.join(xclbin_path, "*.xclbin")
+        )
 
     @staticmethod
     def get_sdaccel_aws_xclbin_file(examplePath, rteName, xilinxVersion):
@@ -547,9 +622,12 @@ class AwsFpgaTestBase(object):
         assert xilinxVersion != ''
 
         xclbin_path = AwsFpgaTestBase.fetch_sdaccel_xclbin_folder_from_s3(examplePath, rteName, xilinxVersion)
-        logger.info("Checking that a non zero size awsxclbin file exists in {}".format(xclbin_path))
-        aws_xclbin = AwsFpgaTestBase.assert_non_zero_file(os.path.join(xclbin_path, "*.{}.*.awsxclbin".format("hw")))
-        return aws_xclbin
+        logger.info(
+            f"Checking that a non zero size awsxclbin file exists in {xclbin_path}"
+        )
+        return AwsFpgaTestBase.assert_non_zero_file(
+            os.path.join(xclbin_path, '*.hw.*.awsxclbin')
+        )
 
     @staticmethod
     def get_vitis_aws_xclbin_file(examplePath, rteName, xilinxVersion):
@@ -558,87 +636,106 @@ class AwsFpgaTestBase(object):
         assert xilinxVersion != ''
 
         xclbin_path = AwsFpgaTestBase.fetch_vitis_xclbin_folder_from_s3(examplePath, rteName, xilinxVersion)
-        logger.info("Checking that a non zero size awsxclbin file exists in {}".format(xclbin_path))
-        aws_xclbin = AwsFpgaTestBase.assert_non_zero_file(os.path.join(xclbin_path, "*.awsxclbin"))
-        return aws_xclbin
+        logger.info(
+            f"Checking that a non zero size awsxclbin file exists in {xclbin_path}"
+        )
+        return AwsFpgaTestBase.assert_non_zero_file(
+            os.path.join(xclbin_path, "*.awsxclbin")
+        )
 
     @staticmethod
     def assert_afi_available(afi):
         # Check the status of the afi
-        logger.info("Checking the status of {}".format(afi))
+        logger.info(f"Checking the status of {afi}")
         afi_state = AwsFpgaTestBase.ec2_client().describe_fpga_images(FpgaImageIds=[afi])['FpgaImages'][0]['State']['Code']
-        logger.info("{} state={}".format(afi, afi_state))
+        logger.info(f"{afi} state={afi_state}")
         assert afi_state == 'available'
 
     @staticmethod
     def assert_afi_public(afi):
         # Check the status of the afi
-        logger.info("Checking that {} is public".format(afi))
+        logger.info(f"Checking that {afi} is public")
         loadPermissions = AwsFpgaTestBase.ec2_client().describe_fpga_image_attribute(FpgaImageId=afi, Attribute='loadPermission')['FpgaImageAttribute']['LoadPermissions']
-        logger.info("{} loadPermissions:".format(afi))
+        logger.info(f"{afi} loadPermissions:")
         for loadPermission in loadPermissions:
             if 'UserId' in loadPermission:
-                logger.info("  UserId={}".format(loadPermission['UserId']))
+                logger.info(f"  UserId={loadPermission['UserId']}")
             else:
-                logger.info("  Group={}".format(loadPermission['Group']))
+                logger.info(f"  Group={loadPermission['Group']}")
         is_public = AwsFpgaTestBase.ec2_client().describe_fpga_images(FpgaImageIds=[afi])['FpgaImages'][0]['Public']
-        logger.info("  Public={}".format(is_public))
+        logger.info(f"  Public={is_public}")
         assert is_public, "{} is not public. To make public:\n{}".format(afi,
             "aws ec2 modify-fpga-image-attribute --fpga-image-id {} --load-permission \'Add=[{{Group=all}}]\'".format(afi))
 
     @staticmethod
     def get_agfi_from_readme(cl):
-        cl_dir = "{}/hdk/cl/examples/{}".format(AwsFpgaTestBase.WORKSPACE, cl)
+        cl_dir = f"{AwsFpgaTestBase.WORKSPACE}/hdk/cl/examples/{cl}"
         assert os.path.exists(cl_dir)
-        agfi = subprocess.check_output("cat {}/README.md | grep \'Pre-generated AGFI ID\' | cut -d \"|\" -f 3".format(cl_dir), shell=True).lstrip().rstrip()
-        afi = subprocess.check_output("cat {}/README.md | grep \'Pre-generated AFI ID\'  | cut -d \"|\" -f 3".format(cl_dir), shell=True).lstrip().rstrip()
-        logger.info("AGFI from README: {}".format(agfi))
-        logger.info("AFI  from README: {}".format(afi))
+        agfi = (
+            subprocess.check_output(
+                f"""cat {cl_dir}/README.md | grep \'Pre-generated AGFI ID\' | cut -d \"|\" -f 3""",
+                shell=True,
+            )
+            .lstrip()
+            .rstrip()
+        )
+        afi = (
+            subprocess.check_output(
+                f"""cat {cl_dir}/README.md | grep \'Pre-generated AFI ID\'  | cut -d \"|\" -f 3""",
+                shell=True,
+            )
+            .lstrip()
+            .rstrip()
+        )
+        logger.info(f"AGFI from README: {agfi}")
+        logger.info(f"AFI  from README: {afi}")
         return (agfi, afi)
 
     @staticmethod
     def exec_as_user(as_root, command):
-        if as_root:
-            return "sudo {}".format(command)
-        else:
-            return command
+        return f"sudo {command}" if as_root else command
 
     @staticmethod
     def fpga_clear_local_image(slot, request_timeout=6000, sync_timeout=180,
             as_root=True):
-        logger.info("Clearing FPGA slot {}".format(slot))
-        cmd = "{} -S {} --request-timeout {} --sync-timeout {}".format(
-                AwsFpgaTestBase.exec_as_user(as_root, "fpga-clear-local-image"),  slot,
-                request_timeout, sync_timeout)
+        logger.info(f"Clearing FPGA slot {slot}")
+        cmd = f'{AwsFpgaTestBase.exec_as_user(as_root, "fpga-clear-local-image")} -S {slot} --request-timeout {request_timeout} --sync-timeout {sync_timeout}'
         (rc, stdout_lines, stderr_lines) = AwsFpgaTestBase.run_cmd(cmd)
-        assert rc == 0, "Clearing FPGA slot {} failed.".format(slot)
+        assert rc == 0, f"Clearing FPGA slot {slot} failed."
 
     @staticmethod
     def fpga_load_local_image(agfi, slot, request_timeout=6000,
             sync_timeout=180, as_root=True):
-        logger.info("Loading {} into slot {}".format(agfi, slot))
-        cmd = "{} -S {} -I {} --request-timeout {} --sync-timeout {}".format(
-                AwsFpgaTestBase.exec_as_user(as_root, "fpga-load-local-image"), slot, agfi,
-                request_timeout, sync_timeout)
+        logger.info(f"Loading {agfi} into slot {slot}")
+        cmd = f'{AwsFpgaTestBase.exec_as_user(as_root, "fpga-load-local-image")} -S {slot} -I {agfi} --request-timeout {request_timeout} --sync-timeout {sync_timeout}'
         (rc, stdout_lines, stderr_lines) = AwsFpgaTestBase.run_cmd(cmd)
-        assert rc == 0, "Failed to load {} in slot {}.".format(agfi, slot)
+        assert rc == 0, f"Failed to load {agfi} in slot {slot}."
 
     @staticmethod
     def check_fpga_afi_loaded(agfi, slot):
         fpgaLocalImage = aws_fpga_test_utils.fpga_describe_local_image(slot)
-        assert fpgaLocalImage.statusName == 'loaded', "{} FPGA StatusName != loaded: {}".format(agfi, fpgaLocalImage.statusName)
-        assert fpgaLocalImage.statusCode == '0', "{} status code != 0: {}".format(agfi, fpgaLocalImage.statusCode)
-        assert fpgaLocalImage.errorName == 'ok', "{} FPGA ErrorName != ok: {}".format(agfi, fpgaLocalImage.errorName)
-        assert fpgaLocalImage.errorCode == '0', "{} ErrorCode != 0: {}".format(agfi, fpgaLocalImage.errorCode)
-        assert fpgaLocalImage.agfi == agfi, "Expected {}, actual {}".format(agfi, fpgaLocalImage.agfi)
+        assert (
+            fpgaLocalImage.statusName == 'loaded'
+        ), f"{agfi} FPGA StatusName != loaded: {fpgaLocalImage.statusName}"
+        assert (
+            fpgaLocalImage.statusCode == '0'
+        ), f"{agfi} status code != 0: {fpgaLocalImage.statusCode}"
+        assert (
+            fpgaLocalImage.errorName == 'ok'
+        ), f"{agfi} FPGA ErrorName != ok: {fpgaLocalImage.errorName}"
+        assert (
+            fpgaLocalImage.errorCode == '0'
+        ), f"{agfi} ErrorCode != 0: {fpgaLocalImage.errorCode}"
+        assert (
+            fpgaLocalImage.agfi == agfi
+        ), f"Expected {agfi}, actual {fpgaLocalImage.agfi}"
         return fpgaLocalImage
 
     @staticmethod
     def fpga_get_virtual_led(slot, remove_dashes=False, as_root=True):
-        cmd = "{} -S {}".format(AwsFpgaTestBase.exec_as_user(as_root, "fpga-get-virtual-led"),
-            slot)
+        cmd = f'{AwsFpgaTestBase.exec_as_user(as_root, "fpga-get-virtual-led")} -S {slot}'
         (rc, stdout_lines, stderr_lines) = AwsFpgaTestBase.run_cmd(cmd)
-        assert rc == 0, "Failed to get virtual LEDs from slot {}.".format(slot)
+        assert rc == 0, f"Failed to get virtual LEDs from slot {slot}."
         value = stdout_lines[1]
         if remove_dashes:
             value = re.sub('-', '', value)
@@ -646,9 +743,9 @@ class AwsFpgaTestBase(object):
 
     @staticmethod
     def fpga_get_virtual_dip_switch(slot, remove_dashes=False, as_root=True):
-        cmd = "{} -S {}".format(AwsFpgaTestBase.exec_as_user(as_root, "fpga-get-virtual-dip-switch"), slot)
+        cmd = f'{AwsFpgaTestBase.exec_as_user(as_root, "fpga-get-virtual-dip-switch")} -S {slot}'
         (rc, stdout_lines, stderr_lines) = AwsFpgaTestBase.run_cmd(cmd)
-        assert rc == 0, "Failed to get virtual DIP switches from slot {}.".format(slot)
+        assert rc == 0, f"Failed to get virtual DIP switches from slot {slot}."
         value = stdout_lines[1]
         if remove_dashes:
             value = re.sub('-', '', value)
@@ -657,10 +754,11 @@ class AwsFpgaTestBase(object):
     @staticmethod
     def fpga_set_virtual_dip_switch(value, slot, as_root=True):
         value = re.sub('-', '', value)
-        cmd = "{} -S {} -D {}".format(AwsFpgaTestBase.exec_as_user(as_root, "fpga-set-virtual-dip-switch"),
-            slot, value)
+        cmd = f'{AwsFpgaTestBase.exec_as_user(as_root, "fpga-set-virtual-dip-switch")} -S {slot} -D {value}'
         (rc, stdout_lines, stderr_lines) = AwsFpgaTestBase.run_cmd(cmd)
-        assert rc == 0, "Failed to set virtual DIP switches in slot {} to {}.".format(slot, value)
+        assert (
+            rc == 0
+        ), f"Failed to set virtual DIP switches in slot {slot} to {value}."
 
     @staticmethod
     def assert_non_zero_file(filter):
@@ -671,11 +769,13 @@ class AwsFpgaTestBase(object):
 
         filenames = [x for x in filenames if ".link." not in x]
 
-        assert len(filenames) > 0, "No {} file found in {}".format(filter, os.getcwd())
-        assert len(filenames) == 1, "More than 1 {} file found: {}\n{}".format(filter, len(filenames), filenames)
+        assert filenames, f"No {filter} file found in {os.getcwd()}"
+        assert (
+            len(filenames) == 1
+        ), f"More than 1 {filter} file found: {len(filenames)}\n{filenames}"
 
         filename = filenames[0]
-        assert os.stat(filename).st_size != 0, "{} is 0 size".format(filename)
+        assert os.stat(filename).st_size != 0, f"{filename} is 0 size"
         return filename
 
     @staticmethod
@@ -696,28 +796,44 @@ class AwsFpgaTestBase(object):
 
     @staticmethod
     def get_fio_verify_script(driver='xdma'):
-        return os.path.join(AwsFpgaTestBase.get_fio_tool_root(), "scripts/{}_4-ch_4-1M_verify.fio".format(driver))
+        return os.path.join(
+            AwsFpgaTestBase.get_fio_tool_root(),
+            f"scripts/{driver}_4-ch_4-1M_verify.fio",
+        )
 
     @staticmethod
     def get_fio_read_benchmark_script(driver='xdma'):
-        return os.path.join(AwsFpgaTestBase.get_fio_tool_root(), "scripts/{}_4-ch_4-1M_read.fio".format(driver))
+        return os.path.join(
+            AwsFpgaTestBase.get_fio_tool_root(),
+            f"scripts/{driver}_4-ch_4-1M_read.fio",
+        )
 
     @staticmethod
     def get_fio_write_benchmark_script(driver='xdma'):
-        return os.path.join(AwsFpgaTestBase.get_fio_tool_root(), "scripts/{}_4-ch_4-1M_write.fio".format(driver))
+        return os.path.join(
+            AwsFpgaTestBase.get_fio_tool_root(),
+            f"scripts/{driver}_4-ch_4-1M_write.fio",
+        )
 
     @staticmethod
     def setup_fio_tools():
         '''Install and setup fio tools'''
         # If downloaded repo already, exists, delete it so we can fetch again
         if os.path.exists(AwsFpgaTestBase.get_fio_tool_install_path()):
-            AwsFpgaTestBase.run_cmd("rm -rf {}".format(AwsFpgaTestBase.get_fio_tool_install_path()), echo=True)
+            AwsFpgaTestBase.run_cmd(
+                f"rm -rf {AwsFpgaTestBase.get_fio_tool_install_path()}", echo=True
+            )
 
         logger.info("Installing fio_dma_tools")
 
-        (rc, stdout_lines, stderr_lines) = AwsFpgaTestBase.run_cmd("python {} {}".format(AwsFpgaTestBase.get_fio_tool_install_script(), AwsFpgaTestBase.get_fio_tool_install_path()), echo=True)
+        (rc, stdout_lines, stderr_lines) = AwsFpgaTestBase.run_cmd(
+            f"python {AwsFpgaTestBase.get_fio_tool_install_script()} {AwsFpgaTestBase.get_fio_tool_install_path()}",
+            echo=True,
+        )
         assert rc == 0
-        assert os.path.exists("{}".format(AwsFpgaTestBase.get_fio_tool_run_script()))
+        assert os.path.exists(f"{AwsFpgaTestBase.get_fio_tool_run_script()}")
 
-        (rc, stdout_lines, stderr_lines) = AwsFpgaTestBase.run_cmd("chmod +x {}".format(AwsFpgaTestBase.get_fio_tool_run_script()))
+        (rc, stdout_lines, stderr_lines) = AwsFpgaTestBase.run_cmd(
+            f"chmod +x {AwsFpgaTestBase.get_fio_tool_run_script()}"
+        )
         assert rc == 0

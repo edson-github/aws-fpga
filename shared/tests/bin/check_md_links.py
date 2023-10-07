@@ -59,7 +59,7 @@ try:
     import aws_fpga_utils
 except ImportError as e:
     traceback.print_tb(sys.exc_info()[2])
-    print("error: {}\nMake sure to source hdk_setup.sh".format(sys.exc_info()[1]))
+    print(f"error: {sys.exc_info()[1]}\nMake sure to source hdk_setup.sh")
     sys.exit(1)
 
 logger = aws_fpga_utils.get_logger(__name__)
@@ -129,7 +129,7 @@ def contains_link(path):
     if parent_dir == path:
         return False
     if os.path.islink(path):
-        logger.debug("Found link: {}".format(path))
+        logger.debug(f"Found link: {path}")
         return True
     return contains_link(parent_dir)
 
@@ -163,22 +163,18 @@ if __name__ == '__main__':
             if name.lower().endswith('.md'):
                 path = os.path.join(root, name)
                 path = os.path.relpath(path)
-                exclude = False
-                for exclude_path in args.exclude:
-                    if re.match(exclude_path, path):
-                        exclude = True
-                        break
+                exclude = any(re.match(exclude_path, path) for exclude_path in args.exclude)
                 if exclude:
-                    logger.warning("Ignoring {}".format(path))
+                    logger.warning(f"Ignoring {path}")
                     continue
                 md_files.append(path)
-    logger.debug ("Found {} .md files".format(len(md_files)))
+    logger.debug(f"Found {len(md_files)} .md files")
 
     # Render the markdown files to xhtml5 and parse the HTML for links and anchors
     md_info = {}
     for md_file in md_files:
         md_info[md_file] = {}
-        logger.debug("Rendering {} to html".format(md_file))
+        logger.debug(f"Rendering {md_file} to html")
         md_info[md_file]['html'] = markdown.markdown(io.open(md_file, 'r', encoding='utf-8').read(), extensions=['markdown.extensions.toc'], output='xhtml5')
         html_parser = HtmlAnchorParser()
         logger.debug("  Parsing out anchors and links")
@@ -189,26 +185,23 @@ if __name__ == '__main__':
 
     # Check links
     for md_file in md_files:
-        logger.debug("Checking {}".format(md_file))
+        logger.debug(f"Checking {md_file}")
         for link in md_info[md_file]['links']:
             if re.match('http', link):
                 ignore = False
                 for url in args.ignore_url:
                     if link.startswith(url):
                         ignore = True
-                        logger.warning("In {} ignoring {}".format(md_file, link))
+                        logger.warning(f"In {md_file} ignoring {link}")
                         break
                 if ignore:
                     continue
                 # Check using urllib2
                 if not check_link(link):
-                    logger.error("Broken link in {}: {}".format(md_file, link))
+                    logger.error(f"Broken link in {md_file}: {link}")
                     num_broken += 1
             else:
-                # File reference
-                # Split out the anchor in the file, if it exists.
-                matches = re.search(r'^(.*)#(.+)$', link)
-                if matches:
+                if matches := re.search(r'^(.*)#(.+)$', link):
                     link_only = matches.group(1)
                     anchor = matches.group(2)
                 else:
@@ -226,8 +219,8 @@ if __name__ == '__main__':
 #                         num_broken += 1
                     link_path = os.path.relpath(link_path)
                     if not os.path.exists(link_path):
-                        logger.error("Broken link in {}: {}".format(md_file, link))
-                        logger.error("  File doesn't exist: {}".format(link_path))
+                        logger.error(f"Broken link in {md_file}: {link}")
+                        logger.error(f"  File doesn't exist: {link_path}")
                         file_exists = False
                         num_broken += 1
                 else:
@@ -235,18 +228,18 @@ if __name__ == '__main__':
                     link_path = md_file
                 if file_exists and anchor:
                     # If there is an anchor check to make sure it is valid
-                    if not link_path in md_info:
-                        logger.error("Broken link in {}: {}".format(md_file, link))
-                        logger.error("  No anchors found for {}".format(link_path))
+                    if link_path not in md_info:
+                        logger.error(f"Broken link in {md_file}: {link}")
+                        logger.error(f"  No anchors found for {link_path}")
                         num_broken += 1
-                    elif not anchor in md_info[link_path]['anchors']:
-                        logger.error("Broken link in {}: {}".format(md_file, link))
-                        logger.error("    Anchor missing in {}".format(link_path))
+                    elif anchor not in md_info[link_path]['anchors']:
+                        logger.error(f"Broken link in {md_file}: {link}")
+                        logger.error(f"    Anchor missing in {link_path}")
                         num_broken += 1
 
-    logger.info("NUM doc files (.md)   : {}".format(len(md_files)))
-    logger.info("NUM links in doc files: {}".format(num_links))
-    logger.info("NUM brokenlinks       : {}".format(num_broken))
+    logger.info(f"NUM doc files (.md)   : {len(md_files)}")
+    logger.info(f"NUM links in doc files: {num_links}")
+    logger.info(f"NUM brokenlinks       : {num_broken}")
 
     # if no broken links, return code is 0. Else it's the number of broken links.
     sys.exit(num_broken)

@@ -23,6 +23,7 @@ Call using ```pytest test_gen_dcp.py```
 See TESTING.md for details.
 '''
 
+
 from __future__ import print_function
 import glob
 import os
@@ -39,7 +40,7 @@ try:
     from aws_fpga_test_utils.AwsFpgaTestBase import AwsFpgaTestBase
 except ImportError as e:
     traceback.print_tb(sys.exc_info()[2])
-    print("error: {}\nMake sure to source hdk_setup.sh".format(sys.exc_info()[1]))
+    print(f"error: {sys.exc_info()[1]}\nMake sure to source hdk_setup.sh")
     sys.exit(1)
 
 logger = aws_fpga_utils.get_logger(__name__)
@@ -157,9 +158,9 @@ class TestGenDcp(AwsFpgaTestBase):
 
         cls.allowed_warnings_regexps = []
         for allowed_warning_spec in cls.allowed_warnings:
-            option_tag_regexps = []
-            for option_tag in allowed_warning_spec[0]:
-                option_tag_regexps.append(re.compile(option_tag))
+            option_tag_regexps = [
+                re.compile(option_tag) for option_tag in allowed_warning_spec[0]
+            ]
             cls.allowed_warnings_regexps.append((option_tag_regexps, re.compile(allowed_warning_spec[1])))
 
         cls.allowed_timing_violations = [
@@ -167,40 +168,37 @@ class TestGenDcp(AwsFpgaTestBase):
         ]
 
     def filter_warnings(self, cl, option_tag, warnings):
-        option_tag = cl + "_" + option_tag
+        option_tag = f"{cl}_{option_tag}"
         # Get reg_exps that match the option tag
         filters = []
         for allowed_warnings_regexp_spec in self.allowed_warnings_regexps:
-            for option_tag_regexp in allowed_warnings_regexp_spec[0]:
-                if option_tag_regexp.match(option_tag):
-                    filters.append(allowed_warnings_regexp_spec[1])
-        if len(filters) == 0:
+            filters.extend(
+                allowed_warnings_regexp_spec[1]
+                for option_tag_regexp in allowed_warnings_regexp_spec[0]
+                if option_tag_regexp.match(option_tag)
+            )
+        if not filters:
             return warnings
         filtered_warnings = []
         for warning in warnings:
-            matched = False
-            for filter in filters:
-                if filter.match(warning):
-                    matched = True
-                    break
+            matched = any(filter.match(warning) for filter in filters)
             if not matched:
                 filtered_warnings.append(warning)
         return filtered_warnings
 
     def allow_timing_violations(self, cl, option_tag):
-        option_tag = cl + "_" + option_tag
-        for reg_exp in self.allowed_timing_violations:
-            if reg_exp.match(option_tag):
-                return True
-        return False
+        option_tag = f"{cl}_{option_tag}"
+        return any(
+            reg_exp.match(option_tag) for reg_exp in self.allowed_timing_violations
+        )
 
     def assert_non_zero_file(self, filter):
         filenames = glob.glob(filter)
-        assert len(filenames) > 0, "No {} file found in {}".format(filter, os.getcwd())
+        assert filenames, f"No {filter} file found in {os.getcwd()}"
         assert len(filenames) == 1, "More than 1 {} file found: {}\n{}".format(filter, len(filenames),
                                                                                "\n".join(filenames))
         filename = filenames[0]
-        assert os.stat(filename).st_size != 0, "{} is 0 size".format(filename)
+        assert os.stat(filename).st_size != 0, f"{filename} is 0 size"
         return filename
 
     def check_build(self, cl, clock_recipes, option_tag):
@@ -210,57 +208,63 @@ class TestGenDcp(AwsFpgaTestBase):
         scripts_dir = self.get_cl_scripts_dir(cl)
         reports_dir = os.path.join(cl_dir, 'build/reports')
 
-        assert os.path.exists(to_aws_dir), "The checkpoints/to_aws directory does not exist: {}".format(to_aws_dir)
+        assert os.path.exists(
+            to_aws_dir
+        ), f"The checkpoints/to_aws directory does not exist: {to_aws_dir}"
 
-        logger.info("Checking that a non zero size ltx file exists in {}".format(checkpoints_dir))
+        logger.info(
+            f"Checking that a non zero size ltx file exists in {checkpoints_dir}"
+        )
 
         ltx_file = self.assert_non_zero_file(os.path.join(checkpoints_dir, '*.ltx'))
-        logger.info("ltx file: {}".format(ltx_file))
+        logger.info(f"ltx file: {ltx_file}")
 
-        logger.info("Checking that a non zero size manifest file exists in {}".format(to_aws_dir))
+        logger.info(
+            f"Checking that a non zero size manifest file exists in {to_aws_dir}"
+        )
         manifest_file = self.assert_non_zero_file(os.path.join(to_aws_dir, '*.manifest.txt'))
-        logger.info("manifest file: {}".format(manifest_file))
+        logger.info(f"manifest file: {manifest_file}")
 
-        logger.info("Checking that a non zero size dcp file exists in {}".format(to_aws_dir))
+        logger.info(f"Checking that a non zero size dcp file exists in {to_aws_dir}")
         dcp = self.assert_non_zero_file(os.path.join(to_aws_dir, '*.dcp'))
-        logger.info("dcp: {}".format(dcp))
+        logger.info(f"dcp: {dcp}")
 
-        logger.info("Checking that a non zero size tar file exists in {}".format(to_aws_dir))
+        logger.info(f"Checking that a non zero size tar file exists in {to_aws_dir}")
         tarball = self.assert_non_zero_file(os.path.join(to_aws_dir, '*.tar'))
-        logger.info("tarball: {}".format(tarball))
+        logger.info(f"tarball: {tarball}")
 
         logger.info("Checking that a dcp exists in the tar file")
-        (rc, stdout_lines, stderr_lines) = self.run_cmd("/usr/bin/tar tvf {} \'*.dcp\'".format(tarball))
-        assert rc == 0, "Did not find dcp in {}".format(tarball)
+        (rc, stdout_lines, stderr_lines) = self.run_cmd(
+            f"/usr/bin/tar tvf {tarball} \'*.dcp\'"
+        )
+        assert rc == 0, f"Did not find dcp in {tarball}"
 
         logger.info("Checking that a manifest exists in the tar file")
-        (rc, stdout_lines, stderr_lines) = self.run_cmd("/usr/bin/tar tvf {} \'*.manifest.txt\'".format(tarball))
-        assert rc == 0, "Did not find manifest in {}".format(tarball)
+        (rc, stdout_lines, stderr_lines) = self.run_cmd(
+            f"/usr/bin/tar tvf {tarball} \'*.manifest.txt\'"
+        )
+        assert rc == 0, f"Did not find manifest in {tarball}"
 
         # Use last_log symlink to grab logname
-        logger.debug("Looking for last_log in {}".format(scripts_dir))
+        logger.debug(f"Looking for last_log in {scripts_dir}")
 
-        assert os.path.exists("last_log"), "Could not find the log file: {}/last_log".format(scripts_dir)
+        assert os.path.exists(
+            "last_log"
+        ), f"Could not find the log file: {scripts_dir}/last_log"
 
         # Check the number of warnings
         (rc, stdout_lines, stderr_lines) = self.run_cmd("grep \"^WARNING\" last_log", check=False)
-        if rc == 0:
-            warnings = stdout_lines[:-1]  # Last line is a blank line
-        else:
-            warnings = []
+        warnings = stdout_lines[:-1] if rc == 0 else []
         num_warnings = len(warnings)
-        logger.info("Saw {} warnings in log file".format(num_warnings))
+        logger.info(f"Saw {num_warnings} warnings in log file")
         filtered_warnings = self.filter_warnings(cl, option_tag, warnings)
         num_warnings = len(filtered_warnings)
         logger.info("Saw {} filtered warnings in log file:\n{}".format(num_warnings, "\n".join(filtered_warnings)))
         # Check the number of critical warnings
         (rc, stdout_lines, stderr_lines) = self.run_cmd("grep \"^CRITICAL WARNING\" last_log", check=False)
-        if rc == 0:
-            critical_warnings = stdout_lines[:-1]  # Last line is a blank line
-        else:
-            critical_warnings = []
+        critical_warnings = stdout_lines[:-1] if rc == 0 else []
         num_critical_warnings = len(critical_warnings)
-        logger.info("Saw {} critical warnings in log file".format(num_critical_warnings))
+        logger.info(f"Saw {num_critical_warnings} critical warnings in log file")
         filtered_critical_warnings = self.filter_warnings(cl, option_tag, critical_warnings)
         num_critical_warnings = len(filtered_critical_warnings)
         logger.info("Saw {} filtered critical warnings in log file:\n{}".format(num_critical_warnings,
@@ -270,11 +274,8 @@ class TestGenDcp(AwsFpgaTestBase):
         # Check if there are any setup/hold-time violations
         (rc, stdout_lines, stderr_lines) = self.run_cmd(
             "grep \"The design did not meet timing requirements.\" last_log", check=False)
-        if rc == 0:
-            NUM_TIMING_VIOLATIONS = len(stdout_lines) - 1
-        else:
-            NUM_TIMING_VIOLATIONS = 0
-        logger.info("{} timing violations".format(NUM_TIMING_VIOLATIONS))
+        NUM_TIMING_VIOLATIONS = len(stdout_lines) - 1 if rc == 0 else 0
+        logger.info(f"{NUM_TIMING_VIOLATIONS} timing violations")
         if self.allow_timing_violations(cl, option_tag):
             logger.info("Timing violations ignored for this configuration")
             NUM_TIMING_VIOLATIONS = 0
@@ -283,19 +284,21 @@ class TestGenDcp(AwsFpgaTestBase):
 
         # Check clock recipes
         timing_report = self.assert_non_zero_file(os.path.join(reports_dir, '*.SH_CL_final_timing_summary.rpt'))
-        logger.info("Checking clock frequencies in {}".format(timing_report))
+        logger.info(f"Checking clock frequencies in {timing_report}")
         for clock_group in sorted(clock_recipes):
             recipe = clock_recipes[clock_group]
             for clock_name in self.DCP_CLOCK_RECIPES[clock_group]['clock_names']:
-                (rc, stdout_lines, stderr_lines) = self.run_cmd("grep -m 1 {} {}".format(clock_name, timing_report))
-                assert rc == 0, "Couldn't find {} in {}".format(clock_name, timing_report)
+                (rc, stdout_lines, stderr_lines) = self.run_cmd(
+                    f"grep -m 1 {clock_name} {timing_report}"
+                )
+                assert rc == 0, f"Couldn't find {clock_name} in {timing_report}"
                 fields = stdout_lines[0].split()
                 act_freq = float(fields[4])
                 exp_freq = float(self.DCP_CLOCK_RECIPES[clock_group]['recipes'][recipe][clock_name])
-                assert act_freq == exp_freq, "{} frequency miscompare: act={} exp={}\n{}".format(clock_name, act_freq,
-                                                                                                 exp_freq,
-                                                                                                 stdout_lines[0])
-                logger.info("{} : {}".format(clock_name, act_freq))
+                assert (
+                    act_freq == exp_freq
+                ), f"{clock_name} frequency miscompare: act={act_freq} exp={exp_freq}\n{stdout_lines[0]}"
+                logger.info(f"{clock_name} : {act_freq}")
 
         return tarball
 
@@ -307,9 +310,9 @@ class TestGenDcp(AwsFpgaTestBase):
         assert clock_recipe_c in self.DCP_CLOCK_RECIPES['C']['recipes']
         assert uram_option in self.DCP_URAM_OPTIONS
         cl_dir = self.get_cl_dir(cl)
-        logger.info("Setting CL_DIR={}".format(cl_dir))
+        logger.info(f"Setting CL_DIR={cl_dir}")
         os.environ['CL_DIR'] = cl_dir
-        assert os.path.exists(cl_dir), logger.error("CL_DIR={} does not exist".format(cl_dir))
+        assert os.path.exists(cl_dir), logger.error(f"CL_DIR={cl_dir} does not exist")
 
         # Clean up all previous DCP generations
         cl_dir = self.get_cl_dir(cl)
@@ -317,20 +320,19 @@ class TestGenDcp(AwsFpgaTestBase):
         to_aws_dir = self.get_cl_to_aws_dir(cl)
         scripts_dir = self.get_cl_scripts_dir(cl)
         reports_dir = os.path.join(cl_dir, 'build/reports')
-        os.system("rm -rf {}/*".format(to_aws_dir))
-        os.system("rm -f {}/*".format(checkpoints_dir))
-        os.system("rm -rf {}/*".format(reports_dir))
-        os.system("rm -f {}/*.log".format(scripts_dir))
+        os.system(f"rm -rf {to_aws_dir}/*")
+        os.system(f"rm -f {checkpoints_dir}/*")
+        os.system(f"rm -rf {reports_dir}/*")
+        os.system(f"rm -f {scripts_dir}/*.log")
 
-        logger.info("Scripts dir is {}".format(scripts_dir))
+        logger.info(f"Scripts dir is {scripts_dir}")
         cwd = os.getcwd()
         os.chdir(scripts_dir)
 
-        option_tag = "{}_{}_{}_{}_{}".format(clock_recipe_a, clock_recipe_b, clock_recipe_c, uram_option,
-                                             build_strategy)
+        option_tag = f"{clock_recipe_a}_{clock_recipe_b}_{clock_recipe_c}_{uram_option}_{build_strategy}"
         (rc, stdout_lines, stderr_lines) = self.run_cmd(
-            "./aws_build_dcp_from_cl.sh -foreground -strategy {} -clock_recipe_a {} -clock_recipe_b {} -clock_recipe_c {} -uram_option {}".format(
-                build_strategy, clock_recipe_a, clock_recipe_b, clock_recipe_c, uram_option))
+            f"./aws_build_dcp_from_cl.sh -foreground -strategy {build_strategy} -clock_recipe_a {clock_recipe_a} -clock_recipe_b {clock_recipe_b} -clock_recipe_c {clock_recipe_c} -uram_option {uram_option}"
+        )
         assert rc == 0, "DCP build failed."
         logger.info("DCP Generation Finished")
 
@@ -365,7 +367,7 @@ class TestGenDcp(AwsFpgaTestBase):
     @pytest.mark.parametrize("uram_option", AwsFpgaTestBase.DCP_URAM_OPTIONS)
     def test_cl_uram_example(self, xilinxVersion, uram_option):
         cl = 'cl_uram_example'
-        logger.info("uram_option={}".format(uram_option))
+        logger.info(f"uram_option={uram_option}")
         self.base_test(cl, xilinxVersion, clock_recipe_a='A0', uram_option=uram_option)
 
     @pytest.mark.parametrize("build_strategy", AwsFpgaTestBase.DCP_BUILD_STRATEGIES)

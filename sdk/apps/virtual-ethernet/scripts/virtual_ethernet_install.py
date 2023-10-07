@@ -42,9 +42,11 @@ def print_success(scripts_path, install_path):
     print("DPDK installation and build complete!")
     print("A simple loopback test may be run via the following steps:")
     print("  sudo fpga-load-local-image -S 0 -I <SDE loopback CL AGFI>")
-    print("  sudo %s/virtual_ethernet_setup.py %s/dpdk 0" % (scripts_path, install_path))
-    print("  cd %s/dpdk" % (install_path))
-    print("  sudo ./%s/app/testpmd -l 0-1  -- --port-topology=loop --auto-start --tx-first --stats-period=3" % (make_tgt))
+    print(f"  sudo {scripts_path}/virtual_ethernet_setup.py {install_path}/dpdk 0")
+    print(f"  cd {install_path}/dpdk")
+    print(
+        f"  sudo ./{make_tgt}/app/testpmd -l 0-1  -- --port-topology=loop --auto-start --tx-first --stats-period=3"
+    )
 
 def cmd_exec(cmd):
     # Execute the cmd, check the return and exit on failures
@@ -63,11 +65,11 @@ def install_dpdk_dep():
         cmd_exec("yum -y install libpcap-devel") 
 
 def install_dpdk(install_path):
-    logger.debug("install_dpdk: install_path=%s" % (install_path))
+    logger.debug(f"install_dpdk: install_path={install_path}")
 
     if os.path.exists(install_path):
         # Allow the user to remove an already existing install_path
-        logger.error("install_path=%s allready exists." % (install_path))
+        logger.error(f"install_path={install_path} allready exists.")
         logger.error("Please specify a different directory or remove the existing directory, exiting")
         sys.exit(1)
 
@@ -77,27 +79,27 @@ def install_dpdk(install_path):
     # Stash away the current working directory
     cwd = os.getcwd()
     scripts_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-    logger.debug("scripts directory path is %s" % (scripts_path))
+    logger.debug(f"scripts directory path is {scripts_path}")
 
     # Make the install_path directory
-    cmd_exec("mkdir %s" % (install_path))
+    cmd_exec(f"mkdir {install_path}")
 
     # Construct the path to the git patch files
-    patches_path = "%s/%s" % (scripts_path, patches_dir)
-    logger.info("Patches will be installed from %s" % (patches_path))
+    patches_path = f"{scripts_path}/{patches_dir}"
+    logger.info(f"Patches will be installed from {patches_path}")
 
     # Read in the patch filenames
     patchfiles = []
-    for patchfile in sorted(glob.iglob("%s/000*.patch" % (patches_path))):
-        logger.debug("found patchfile=%s" % patchfile)
-	patchfiles.append(os.path.abspath(patchfile))
+    for patchfile in sorted(glob.iglob(f"{patches_path}/000*.patch")):
+        logger.debug(f"found patchfile={patchfile}")
+        patchfiles.append(os.path.abspath(patchfile))
 
     # cd to the install_path directory
-    os.chdir("%s" % (install_path))
+    os.chdir(f"{install_path}")
 
     # Clone the DPDK repo
-    logger.info("Cloning %s version of %s into %s" % (dpdk_ver, dpdk_git, install_path))
-    cmd_exec("git clone -b %s %s" % (dpdk_ver, dpdk_git))
+    logger.info(f"Cloning {dpdk_ver} version of {dpdk_git} into {install_path}")
+    cmd_exec(f"git clone -b {dpdk_ver} {dpdk_git}")
 
     # cd to the dpdk directory 
     os.chdir("dpdk")
@@ -109,14 +111,14 @@ def install_dpdk(install_path):
 
     # Apply the patches
     for patchfile in patchfiles:
-        logger.info("Applying patch for patchfile=%s" % patchfile)
-        cmd_exec("git am %s" % (patchfile))
+        logger.info(f"Applying patch for patchfile={patchfile}")
+        cmd_exec(f"git am {patchfile}")
 
     # Configure the DPDK build
-    cmd_exec("make install T=%s" % (make_tgt) )
+    cmd_exec(f"make install T={make_tgt}")
 
     # cd back to the original directory
-    os.chdir("%s" % (cwd))
+    os.chdir(f"{cwd}")
 
     # Print a success message
     print_success(scripts_path, install_path)
@@ -130,10 +132,7 @@ def main():
         help='Enable debug messages')
     args = parser.parse_args()
 
-    logging_level = logging.INFO
-    if args.debug:
-        logging_level = logging.DEBUG
-
+    logging_level = logging.DEBUG if args.debug else logging.INFO
     logging_format = '%(levelname)s:%(asctime)s: %(message)s'
 
     logger.setLevel(logging_level)

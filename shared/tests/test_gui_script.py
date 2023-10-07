@@ -23,6 +23,7 @@ Call using ```pytest test_gui_script.py```
 See TESTING.md for details.
 '''
 
+
 from __future__ import print_function
 import os
 from os.path import dirname, realpath
@@ -35,7 +36,9 @@ try:
     import aws_fpga_utils
 except ImportError as e:
     traceback.print_tb(sys.exc_info()[2])
-    print("error: {}\nMake sure to source hdk_setup.sh or shared/tests/bin/setup_test_env*.sh".format(sys.exc_info()[1]))
+    print(
+        f"error: {sys.exc_info()[1]}\nMake sure to source hdk_setup.sh or shared/tests/bin/setup_test_env*.sh"
+    )
     sys.exit(1)
 
 logger = aws_fpga_utils.get_logger(__name__)
