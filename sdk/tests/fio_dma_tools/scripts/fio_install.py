@@ -48,66 +48,66 @@ def cmd_exec(cmd):
         sys.exit(1)
 
 def install_fio(install_path):
-    logger.debug("install_fio: install_path=%s" % (install_path))
+    logger.debug(f"install_fio: install_path={install_path}")
 
     if os.path.exists(install_path):
         # Allow the user to remove an already existing install_path
-        logger.error("install_path=%s allready exists." % (install_path))
+        logger.error(f"install_path={install_path} allready exists.")
         logger.error("Please specify a different directory or remove the existing directory, exiting")
         sys.exit(1)
 
     # Stash away the current working directory
     cwd = os.getcwd()
     scripts_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-    logger.debug("scripts directory path is %s" % (scripts_path))
+    logger.debug(f"scripts directory path is {scripts_path}")
 
     # Make the install_path directory
-    cmd_exec("mkdir %s" % (install_path))
+    cmd_exec(f"mkdir {install_path}")
 
     # Construct the path to the git patch files
-    patches_path = "%s/%s" % (scripts_path, patches_dir)
-    logger.info("Patches will be installed from %s" % (patches_path))
+    patches_path = f"{scripts_path}/{patches_dir}"
+    logger.info(f"Patches will be installed from {patches_path}")
 
     # Read in the patch filenames
     patchfiles = []
-    for patchfile in sorted(glob.iglob("%s/000*.patch" % (patches_path))):
-        logger.debug("found patchfile=%s" % patchfile)
+    for patchfile in sorted(glob.iglob(f"{patches_path}/000*.patch")):
+        logger.debug(f"found patchfile={patchfile}")
         patchfiles.append(os.path.abspath(patchfile))
 
     # cd to the install_path directory
-    os.chdir("%s" % (install_path))
+    os.chdir(f"{install_path}")
 
     # Clone the FIO repo
-    logger.info("Cloning %s into %s" % (fio_git, install_path))
-    cmd_exec("git clone %s" % (fio_git))
+    logger.info(f"Cloning {fio_git} into {install_path}")
+    cmd_exec(f"git clone {fio_git}")
 
     # cd to the fio directory
     os.chdir("fio")
 
     # Checkout the feature branch
-    logger.info("Checking out feature branch %s" % (fio_branch))
-    cmd_exec("git checkout %s -b %s" % (fio_sha, fio_branch))
+    logger.info(f"Checking out feature branch {fio_branch}")
+    cmd_exec(f"git checkout {fio_sha} -b {fio_branch}")
 
     # Check that the patches can be applied
     for patchfile in patchfiles:
-        logger.debug("Checking git apply patch for patchfile=%s" % patchfile)
-        cmd_exec("git apply --check %s" % (patchfile))
+        logger.debug(f"Checking git apply patch for patchfile={patchfile}")
+        cmd_exec(f"git apply --check {patchfile}")
 
     # Apply the patches
     for patchfile in patchfiles:
-        logger.info("Applying patch for patchfile=%s" % patchfile)
-        cmd_exec("git am %s" % (patchfile))
+        logger.info(f"Applying patch for patchfile={patchfile}")
+        cmd_exec(f"git am {patchfile}")
 
     # Build FIO
     cmd_exec("make")
 
     # For convenience, we install a soft-link from the install_path back to the
     # the scripts_path.  We first remove any pre-existing soft-link.
-    cmd_exec("rm -f %s/fio" % (scripts_path))
-    cmd_exec("ln -s %s/fio/fio %s/fio" % (install_path, scripts_path))
+    cmd_exec(f"rm -f {scripts_path}/fio")
+    cmd_exec(f"ln -s {install_path}/fio/fio {scripts_path}/fio")
 
     # cd back to the original directory
-    os.chdir("%s" % (cwd))
+    os.chdir(f"{cwd}")
 
     # Print a success message
     print_success(scripts_path, install_path)
@@ -121,10 +121,7 @@ def main():
         help='Enable debug messages')
     args = parser.parse_args()
 
-    logging_level = logging.INFO
-    if args.debug:
-        logging_level = logging.DEBUG
-
+    logging_level = logging.DEBUG if args.debug else logging.INFO
     logging_format = '%(levelname)s:%(asctime)s: %(message)s'
 
     logger.setLevel(logging_level)

@@ -55,7 +55,9 @@ def print_success(scripts_path, install_path):
     print("")
     print("pktgen-dpdk installation and build complete!")
     print("pktgen-dpdk may be setup via the following step:")
-    print("  sudo %s/virtual_ethernet_pktgen_setup.py %s --eni_dbdf <ENI_DBDF> --eni_ethdev <ENI_ETHDEV>" % (scripts_path, install_path))
+    print(
+        f"  sudo {scripts_path}/virtual_ethernet_pktgen_setup.py {install_path} --eni_dbdf <ENI_DBDF> --eni_ethdev <ENI_ETHDEV>"
+    )
 
 def cmd_exec(cmd):
     # Execute the cmd, check the return and exit on failures
@@ -74,11 +76,11 @@ def install_dpdk_dep():
         cmd_exec("sudo yum -y install libpcap-devel") 
 
 def install_pktgen_dpdk(install_path):
-    logger.debug("install_pktgen_dpdk: install_path=%s" % (install_path))
+    logger.debug(f"install_pktgen_dpdk: install_path={install_path}")
 
     if os.path.exists(install_path):
         # Allow the user to remove an already existing install_path
-        logger.error("install_path=%s allready exists." % (install_path))
+        logger.error(f"install_path={install_path} allready exists.")
         logger.error("Please specify a different directory or remove the existing directory, exiting")
         sys.exit(1)
 
@@ -88,85 +90,91 @@ def install_pktgen_dpdk(install_path):
     # Stash away the current working directory
     cwd = os.getcwd()
     scripts_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-    logger.debug("scripts directory path is %s" % (scripts_path))
+    logger.debug(f"scripts directory path is {scripts_path}")
 
     # Make the install_path directory
-    cmd_exec("mkdir %s" % (install_path))
+    cmd_exec(f"mkdir {install_path}")
 
     # Construct the path to the git patch files
-    patches_path = "%s/%s" % (scripts_path, patches_dir)
-    logger.info("Patches will be installed from %s" % (patches_path))
+    patches_path = f"{scripts_path}/{patches_dir}"
+    logger.info(f"Patches will be installed from {patches_path}")
     # Read in the pktgen patch filenames
     patchfiles = []
-    for patchfile in sorted(glob.iglob("%s/000*.patch" % (patches_path))):
-        logger.debug("found patchfile=%s for pktgen" % patchfile)
-	patchfiles.append(os.path.abspath(patchfile))
+    for patchfile in sorted(glob.iglob(f"{patches_path}/000*.patch")):
+        logger.debug(f"found patchfile={patchfile} for pktgen")
+        patchfiles.append(os.path.abspath(patchfile))
     # Read in the dpdk patch filenames
     dpdk_patchfiles = []
-    for dpdk_patchfile in sorted(glob.iglob("%s/dpdk*.patch" % (patches_path))):
-        logger.debug("found patchfile=%s for dpdk" % dpdk_patchfile)
-	dpdk_patchfiles.append(os.path.abspath(dpdk_patchfile))
+    for dpdk_patchfile in sorted(glob.iglob(f"{patches_path}/dpdk*.patch")):
+        logger.debug(f"found patchfile={dpdk_patchfile} for dpdk")
+        dpdk_patchfiles.append(os.path.abspath(dpdk_patchfile))
     # cd to the install_path directory
-    os.chdir("%s" % (install_path))
+    os.chdir(f"{install_path}")
 
     # meson install
     logger.info("download and untar meson")
-    cmd_exec("wget %s" % (meson_git))
-    cmd_exec("tar -xf %s" %(meson_file))
-    cmd_exec("rm %s" %(meson_file))
+    cmd_exec(f"wget {meson_git}")
+    cmd_exec(f"tar -xf {meson_file}")
+    cmd_exec(f"rm {meson_file}")
     # ninja install
     logger.info("download and unzip ninja")
-    cmd_exec("wget %s" % (ninja_git))
+    cmd_exec(f"wget {ninja_git}")
     cmd_exec("unzip ninja-linux.zip")
     cmd_exec("rm ninja-linux.zip")
 
     # Clone the DPDK repo
-    logger.info("Cloning %s version of %s into %s" % (dpdk_ver, dpdk_git, install_path))
-    cmd_exec("git clone -b %s %s" % (dpdk_ver, dpdk_git))
+    logger.info(f"Cloning {dpdk_ver} version of {dpdk_git} into {install_path}")
+    cmd_exec(f"git clone -b {dpdk_ver} {dpdk_git}")
 
     # cd to the dpdk directory 
     os.chdir("dpdk")
     for dpdk_patchfile in dpdk_patchfiles:
-        logger.info("Applying patch for patchfile=%s" % dpdk_patchfile)
-        cmd_exec("git apply %s" % (dpdk_patchfile))
+        logger.info(f"Applying patch for patchfile={dpdk_patchfile}")
+        cmd_exec(f"git apply {dpdk_patchfile}")
 
     # Configure and build DPDK 
     #cmd_exec("make install T=%s" % (make_tgt))
-    cmd_exec("export PATH=$PATH:%s; ../%s/meson.py build -Denable_kmods=true" % (install_path, meson_ver))
+    cmd_exec(
+        f"export PATH=$PATH:{install_path}; ../{meson_ver}/meson.py build -Denable_kmods=true"
+    )
     builddir="./build"
-    os.chdir("%s" % (builddir))
+    os.chdir(f"{builddir}")
     cmd_exec("../../ninja")
     cmd_exec("sudo ../../ninja install")
     os.chdir("../")
     #cmd_exec("make install T=x86_64-native-linuxapp-gcc")
     # cd to the install_path directory
-    os.chdir("%s" % (install_path))
+    os.chdir(f"{install_path}")
 
     # Clone the pktgen-dpdk repo
-    logger.info("Cloning %s version of %s into %s" % (pktgen_ver, pktgen_git, install_path))
-    cmd_exec("git clone -b %s %s" % (pktgen_ver, pktgen_git))
+    logger.info(
+        f"Cloning {pktgen_ver} version of {pktgen_git} into {install_path}"
+    )
+    cmd_exec(f"git clone -b {pktgen_ver} {pktgen_git}")
 
     # cd to the pktgen-dpdk directory 
     os.chdir("pktgen-dpdk")
 
     # Check that the patches can be applied
     for patchfile in patchfiles:
-        logger.debug("Checking git apply patch for patchfile=%s" % patchfile)
-        cmd_exec("git apply --check %s" % (patchfile))
+        logger.debug(f"Checking git apply patch for patchfile={patchfile}")
+        cmd_exec(f"git apply --check {patchfile}")
 
     # Apply the patches
     for patchfile in patchfiles:
-        logger.info("Applying patch for patchfile=%s" % patchfile)
-        cmd_exec("git apply %s" % (patchfile))
+        logger.info(f"Applying patch for patchfile={patchfile}")
+        cmd_exec(f"git apply {patchfile}")
 
     # Build pktgen-dpdk
-    cmd_exec("ln -s %s/%s/meson.py %s/meson" %(install_path, meson_ver, install_path))
+    cmd_exec(f"ln -s {install_path}/{meson_ver}/meson.py {install_path}/meson")
     # also set pkg_config_path and ld_lib_path which are expected to /usr/local/lib64 as per
     # https://doc.dpdk.org/guides/prog_guide/build-sdk-meson.html
-    cmd_exec("export PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig/; export LD_LIBRARY_PATH=/usr/local/lib64; export PATH=$PATH:%s; export RTE_SDK=%s/dpdk; export RTE_TARGET=%s; make" % (install_path, install_path, make_tgt))
+    cmd_exec(
+        f"export PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig/; export LD_LIBRARY_PATH=/usr/local/lib64; export PATH=$PATH:{install_path}; export RTE_SDK={install_path}/dpdk; export RTE_TARGET={make_tgt}; make"
+    )
 
     # cd back to the original directory
-    os.chdir("%s" % (cwd))
+    os.chdir(f"{cwd}")
 
     # Print a success message
     print_success(scripts_path, install_path)
@@ -180,10 +188,7 @@ def main():
         help='Enable debug messages')
     args = parser.parse_args()
 
-    logging_level = logging.INFO
-    if args.debug:
-        logging_level = logging.DEBUG
-
+    logging_level = logging.DEBUG if args.debug else logging.INFO
     logging_format = '%(levelname)s:%(asctime)s: %(message)s'
 
     logger.setLevel(logging_level)

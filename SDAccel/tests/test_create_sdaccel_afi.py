@@ -23,6 +23,7 @@ Call using ```pytest test_create_sdaccel_afi.py```
 See TESTING.md for details.
 '''
 
+
 from __future__ import print_function
 from __builtin__ import str
 import boto3
@@ -40,7 +41,9 @@ try:
     import aws_fpga_utils
 except ImportError as e:
     traceback.print_tb(sys.exc_info()[2])
-    print("error: {}\nMake sure to source shared/bin/setup_test_env.sh".format(sys.exc_info()[1]))
+    print(
+        f"error: {sys.exc_info()[1]}\nMake sure to source shared/bin/setup_test_env.sh"
+    )
     sys.exit(1)
 
 logger = aws_fpga_utils.get_logger(__name__)
@@ -73,9 +76,11 @@ class TestCreateSDAccelAfi(AwsFpgaTestBase):
     def call_create_afi_script(self, examplePath, xclbin, target, rteName, xilinxVersion):
 
         full_example_path = self.get_sdaccel_example_fullpath(examplePath=examplePath)
-        logger.info("SDAccel Example path={}".format(full_example_path))
+        logger.info(f"SDAccel Example path={full_example_path}")
 
-        assert os.path.exists(full_example_path), "SDAccel Example path={} does not exist".format(full_example_path)
+        assert os.path.exists(
+            full_example_path
+        ), f"SDAccel Example path={full_example_path} does not exist"
 
         os.chdir(full_example_path)
 
@@ -102,9 +107,13 @@ class TestCreateSDAccelAfi(AwsFpgaTestBase):
         rc = os.system(cmd)
         assert rc == 0, "Error encountered while running the create_sdaccel_afi.sh script"
 
-        logger.info("Checking that a non zero size aws_xclbin file exists in {}".format(aws_xclbin_path))
-        aws_xclbin = self.assert_non_zero_file(os.path.join(aws_xclbin_path, "*.{}.*.awsxclbin".format(target)))
-        logger.info("Uploading aws_xclbin file: {}".format(aws_xclbin))
+        logger.info(
+            f"Checking that a non zero size aws_xclbin file exists in {aws_xclbin_path}"
+        )
+        aws_xclbin = self.assert_non_zero_file(
+            os.path.join(aws_xclbin_path, f"*.{target}.*.awsxclbin")
+        )
+        logger.info(f"Uploading aws_xclbin file: {aws_xclbin}")
 
         aws_xclbin_key = os.path.join(self.get_sdaccel_example_s3_xclbin_tag(examplePath=examplePath, target=target, rteName=rteName, xilinxVersion=xilinxVersion), basename(aws_xclbin))
         self.s3_client().upload_file(aws_xclbin, self.s3_bucket, aws_xclbin_key)
@@ -113,12 +122,10 @@ class TestCreateSDAccelAfi(AwsFpgaTestBase):
 
         create_afi_response_file_key = self.get_sdaccel_example_s3_afi_tag(examplePath=examplePath, target=target, rteName=rteName, xilinxVersion=xilinxVersion)
 
-        logger.info("Uploading create_afi output file: {}".format(create_afi_response_file))
+        logger.info(f"Uploading create_afi output file: {create_afi_response_file}")
         self.s3_client().upload_file(create_afi_response_file, self.s3_bucket, create_afi_response_file_key)
 
-        create_afi_response = json.load(open(create_afi_response_file))
-
-        return create_afi_response
+        return json.load(open(create_afi_response_file))
 
 
     def test_create_sdaccel_afi(self, examplePath, rteName, xilinxVersion, target="hw"):
@@ -128,11 +135,15 @@ class TestCreateSDAccelAfi(AwsFpgaTestBase):
 
         afi = create_afi_response.get("FpgaImageId", None)
 
-        assert afi is not None, "AFI ID not available in create_afi response:{}".format(str(create_afi_response))
+        assert (
+            afi is not None
+        ), f"AFI ID not available in create_afi response:{str(create_afi_response)}"
 
         # Wait for the AFI to complete
-        rc = os.system(self.WORKSPACE + "/shared/bin/scripts/wait_for_afi.py --afi {}".format(afi))
-        assert rc == 0, "Error while waiting for afi={}".format(afi)
+        rc = os.system(
+            f"{self.WORKSPACE}/shared/bin/scripts/wait_for_afi.py --afi {afi}"
+        )
+        assert rc == 0, f"Error while waiting for afi={afi}"
 
         self.assert_afi_available(afi)
 

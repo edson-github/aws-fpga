@@ -34,14 +34,13 @@ def get_logger(name):
 logger = get_logger(__file__)
 
 def create_sns_subscription(topic_name, email, wait_for_confirmation=True):
-    WAIT_FOR_CONFIRMATION_DELAY = 10
     MAX_WAIT_FOR_CONFIRMATION_DELAY = timedelta(minutes=10)
     sns_client = boto3.client('sns')
     # Create the topic if it doesn't exist
     # If it already exists just returns the ARN of the existing topic.
     topic_arn = sns_client.create_topic(Name=topic_name)['TopicArn']
-    logger.debug("topic_arn={}".format(topic_arn))
-    
+    logger.debug(f"topic_arn={topic_arn}")
+
     # Search for existing subscription
     subscription_found = False
     list_resp = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
@@ -49,17 +48,17 @@ def create_sns_subscription(topic_name, email, wait_for_confirmation=True):
         for subscription in list_resp['Subscriptions']:
             if subscription['Endpoint'] == email and subscription['Protocol'] == 'email':
                 subscription_found = True
-                logger.debug("{} already subscribed to {}".format(email, topic_name))
+                logger.debug(f"{email} already subscribed to {topic_name}")
                 subscription_arn = subscription['SubscriptionArn']
-    
+
     # Create subscription if it doesn't already exist
     if not subscription_found:
-        logger.info("Subscribing {} to the {} topic".format(email, topic_name))
+        logger.info(f"Subscribing {email} to the {topic_name} topic")
         sub_resp = sns_client.subscribe(TopicArn=topic_arn, Protocol='email', Endpoint=email)
         subscription_arn = sub_resp['SubscriptionArn']
         logger.info("Subscription created.")
-    logger.debug("Subscription ARN={}".format(subscription_arn))
-    
+    logger.debug(f"Subscription ARN={subscription_arn}")
+
     if wait_for_confirmation:
         # Make sure that subscription has been confirmed
         arn_re = re.compile(r'^arn:aws:sns:')
@@ -67,6 +66,7 @@ def create_sns_subscription(topic_name, email, wait_for_confirmation=True):
         if not subscription_confirmed:
             logger.info("Waiting for subscription confirmation before continuing. Check your email.")
         start_time = datetime.utcnow()
+        WAIT_FOR_CONFIRMATION_DELAY = 10
         while not subscription_confirmed:
             time.sleep(WAIT_FOR_CONFIRMATION_DELAY)
             subscription_found = False
@@ -86,5 +86,5 @@ def create_sns_subscription(topic_name, email, wait_for_confirmation=True):
                 if (current_time - start_time) > MAX_WAIT_FOR_CONFIRMATION_DELAY:
                     logger.error("Timed out waiting for SNS subscription confirmation.")
                     raise RuntimeError("Timed out waiting for SNS subscription confirmation.")
-    
+
     return topic_arn

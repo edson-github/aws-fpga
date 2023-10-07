@@ -55,7 +55,9 @@ class TestNonRootAccess(AwsFpgaTestBase):
 
         AwsFpgaTestBase.assert_sdk_setup()
 
-        assert AwsFpgaTestBase.running_on_f1_instance(), "This test must be run on an F1 instance. Running on {}".format(aws_fpga_test_utils.get_instance_type())
+        assert (
+            AwsFpgaTestBase.running_on_f1_instance()
+        ), f"This test must be run on an F1 instance. Running on {aws_fpga_test_utils.get_instance_type()}"
 
         (cls.cl_hello_world_agfi, cl_hello_world_afi) = cls.get_agfi_from_readme('cl_hello_world')
         return
@@ -65,7 +67,9 @@ class TestNonRootAccess(AwsFpgaTestBase):
         for slot in range(AwsFpgaTestBase.num_slots):
             self.fpga_load_local_image(self.cl_hello_world_agfi, slot,
                     as_root=False)
-            assert AwsFpgaTestBase.check_fpga_afi_loaded(self.cl_hello_world_agfi, slot), "{} not loaded in slot {}".format(self.cl_hello_world_agfi, slot)
+            assert AwsFpgaTestBase.check_fpga_afi_loaded(
+                self.cl_hello_world_agfi, slot
+            ), f"{self.cl_hello_world_agfi} not loaded in slot {slot}"
         cmd = "cd $WORKSPACE/hdk/cl/examples/cl_hello_world/software/runtime && make "
         assert os.system(cmd) == 0
         logger.info("Compiled hello world")
@@ -76,8 +80,10 @@ class TestNonRootAccess(AwsFpgaTestBase):
 
     def test_hello_world_as_non_root_user(self):
         for slot in range(AwsFpgaTestBase.num_slots):
-            (rc, out, err) = self.run_cmd("bash -x {}/sdk/tests/non_root_log_into_group.sh {}".format(os.environ['WORKSPACE'], slot))
-            logger.info("{}\n{}".format(out, err))
+            (rc, out, err) = self.run_cmd(
+                f"bash -x {os.environ['WORKSPACE']}/sdk/tests/non_root_log_into_group.sh {slot}"
+            )
+            logger.info(f"{out}\n{err}")
             assert rc == 0
             AwsFpgaTestBase.fpga_set_virtual_dip_switch("1111111111111111", slot, as_root=False)
             assert AwsFpgaTestBase.fpga_get_virtual_led(slot, as_root=False) == "1010-1101-1101-1110"

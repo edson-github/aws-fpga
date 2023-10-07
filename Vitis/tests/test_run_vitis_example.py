@@ -23,6 +23,7 @@ Call using ```pytest test_create_afi.py```
 See TESTING.md for details.
 '''
 
+
 from __future__ import print_function
 import boto3
 import os
@@ -38,7 +39,9 @@ try:
     import aws_fpga_utils
 except ImportError as e:
     traceback.print_tb(sys.exc_info()[2])
-    print("error: {}\nMake sure to source shared/bin/setup_test_env.sh".format(sys.exc_info()[1]))
+    print(
+        f"error: {sys.exc_info()[1]}\nMake sure to source shared/bin/setup_test_env.sh"
+    )
     sys.exit(1)
 
 logger = aws_fpga_utils.get_logger(__name__)
@@ -79,10 +82,10 @@ class TestRunVitisExample(AwsFpgaTestBase):
         check_runtime_script = os.path.join(AwsFpgaTestBase.WORKSPACE,'vitis_runtime_setup.sh')
 
         self.get_vitis_aws_xclbin_file(examplePath, rteName, xilinxVersion)
-         
+
         # run_cmd = "sudo -E /bin/bash -l -c \"source {} && {} \"".format(check_runtime_script, em_run_cmd)
-        run_cmd = "source {} && sleep 1m && {}".format(check_runtime_script, em_run_cmd)
-        logger.info("Running cmd={}".format(run_cmd))
+        run_cmd = f"source {check_runtime_script} && sleep 1m && {em_run_cmd}"
+        logger.info(f"Running cmd={run_cmd}")
         (rc, stdout_lines, stderr_lines) = self.run_cmd(run_cmd)
         assert rc == 0
 

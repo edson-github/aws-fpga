@@ -43,8 +43,10 @@ def print_success(scripts_path, install_path):
     print("")
     print("DPDK setup complete!")
     print("pktgen-dpdk may be run via the following steps:")
-    print("  cd %s/pktgen-dpdk" % (install_path))
-    print("  sudo ./app/%s/pktgen -l 0,1 -n 4 --proc-type auto --log-level 7 --socket-mem 2048 --file-prefix pg -b 00:03.0 -- -T -P -m [1].0 -f %s/pktgen-ena.pkt" % (make_tgt, scripts_path))
+    print(f"  cd {install_path}/pktgen-dpdk")
+    print(
+        f"  sudo ./app/{make_tgt}/pktgen -l 0,1 -n 4 --proc-type auto --log-level 7 --socket-mem 2048 --file-prefix pg -b 00:03.0 -- -T -P -m [1].0 -f {scripts_path}/pktgen-ena.pkt"
+    )
 
 def check_output(args, stderr=None):
     return subprocess.Popen(args, stdout=subprocess.PIPE,
@@ -65,32 +67,36 @@ def load_uio():
         cmd_exec("modprobe uio_pci_generic")
 
 def setup_dpdk(install_path, eni_dbdf, eni_ethdev):
-    logger.debug("setup_dpdk: install_path=%s" % (install_path))
+    logger.debug(f"setup_dpdk: install_path={install_path}")
 
     if os.path.exists(install_path) == False:
-        logger.error("install_path=%s does not exist." % (install_path))
+        logger.error(f"install_path={install_path} does not exist.")
         logger.error("Please specify a directory that was installed via virtual-ethernet-pktgen-install.py, exiting")
         sys.exit(1)
 
     if eni_dbdf == "None" or eni_ethdev == "None":
-        logger.error("eni_dbdf=%s, eni_ethdev=%s is invalid, exiting" % (eni_dbdf, eni_ethdev))
+        logger.error(
+            f"eni_dbdf={eni_dbdf}, eni_ethdev={eni_ethdev} is invalid, exiting"
+        )
         sys.exit(1)
 
     if eni_ethdev == "eth0":
-        logger.error("Using eni_ethdev=%s for pktgen will disrupt your primary network interface" % (eni_ethdev))
+        logger.error(
+            f"Using eni_ethdev={eni_ethdev} for pktgen will disrupt your primary network interface"
+        )
         logger.error("Please specifiy a different eni_ethdev such as eth1, exiting")
         sys.exit(1)
 
     # Stash away the current working directory
     cwd = os.getcwd()
     scripts_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-    logger.debug("scripts directory path is %s" % (scripts_path))
+    logger.debug(f"scripts directory path is {scripts_path}")
 
     # cd to the install_path/dpdk directory
-    os.chdir("%s/dpdk" % (install_path))
+    os.chdir(f"{install_path}/dpdk")
 
     if os.path.exists(dpdk_devbind) == False:
-        logger.error("dpdk_devbind=%s does not exist." % (dpdk_devbind))
+        logger.error(f"dpdk_devbind={dpdk_devbind} does not exist.")
         logger.error("Please specify a directory that was installed via virtual-ethernet-pktgen-install.py, exiting")
         sys.exit(1)
 
@@ -111,11 +117,11 @@ def setup_dpdk(install_path, eni_dbdf, eni_ethdev):
     cmd_exec("insmod ./build/kernel/linux/igb_uio/igb_uio.ko")
 
     # Bind the ENI device to to DPDK
-    cmd_exec("ifdown %s" % (eni_ethdev))
-    cmd_exec("%s --bind=igb_uio %s" % (dpdk_devbind, eni_dbdf))
+    cmd_exec(f"ifdown {eni_ethdev}")
+    cmd_exec(f"{dpdk_devbind} --bind=igb_uio {eni_dbdf}")
 
     # cd back to the original directory
-    os.chdir("%s" % (cwd))
+    os.chdir(f"{cwd}")
 
     # Print a success message
     print_success(scripts_path, install_path)
@@ -133,10 +139,7 @@ def main():
         help='Enable debug messages')
     args = parser.parse_args()
 
-    logging_level = logging.INFO
-    if args.debug:
-        logging_level = logging.DEBUG
-
+    logging_level = logging.DEBUG if args.debug else logging.INFO
     logging_format = '%(levelname)s:%(asctime)s: %(message)s'
 
     logger.setLevel(logging_level)
